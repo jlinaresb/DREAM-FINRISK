@@ -21,7 +21,7 @@ Each new model/pipeline must be have a specific folder in ```src/``` (see [basel
 After download ```train/``` and ```test/``` folders, you can import both subsets with the following code:
 
 ``` {r}
-    source("src/utils/importPseq.r")
-    train <- pseq(subset = "train")
-    test <- pseq(subset = "test")
+source("src/utils/importPseq.r")
+train <- pseq(subset = "train")
+test <- pseq(subset = "test")
 ```
