@@ -14,3 +14,14 @@ To run the code, download ```train/``` and ```test/``` folders into project root
 All code must be included in ```src/``` folder. In this folder, we have an ```utils/``` repository to stored those function and/or scripts for general stuffs (such as data preprocessing, etc.).
 
 Each new model/pipeline must be have a specific folder in ```src/``` (see [baseline]() as example). The new models/pipelines have to import data from ```train/``` and make predict using ```test/``` data. The predicted results must be saved on ```output/``` as ```.csv``` (see [here](https://www.synapse.org/#!Synapse:syn27130803/wiki/619273) for more information)
+
+## Basics
+
+### Import data
+After download ```train/``` and ```test/``` folders, you can import both subsets with the following code:
+
+``` {r}
+    source("src/utils/importPseq.r")
+    train <- pseq(subset = "train")
+    test <- pseq(subset = "test")
+```
