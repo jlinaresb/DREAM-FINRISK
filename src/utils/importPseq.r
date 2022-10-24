@@ -1,15 +1,5 @@
-# TODO:
-# - Remove non-targeting patients (see discussion forum)
-# - Add guanrank variable to stratify patients
-# - Remove NZV variables
-# - Calculate relative abundance
-# - Feature selection for each taxon level (PCA, FCBF, filter, wrapper)
-# - Trainning models:
-#     Option 1): Survival + treatment (like anthra project)
-#     Option 2): Binary classification after guanrank stratification
-#     Option 3): Survival model
-
 # Function to import train or test data in phyloseq object
+# ========
 # Arguments:
 #   - subset: character indicating "train" or "test" subset.
 # Return:
