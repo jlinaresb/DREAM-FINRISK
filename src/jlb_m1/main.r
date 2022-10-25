@@ -1,62 +1,82 @@
 # TODO:
-# - Add guanrank variable to stratify patients
-# - Feature selection for each taxon level (PCA, FCBF, filter, wrapper)
+# - Glomerate by species/genus?
+# - Feature selection for each taxon level (PCA, FCBF)
 # - Trainning models:
 #     Option 1): Survival + treatment (like anthra project)
-#     Option 2): Binary classification after guanrank stratification
-#     Option 3): Survival model
+# - Process test data
 
-
+start <- Sys.time()
 setwd(here::here())
 source("requirements.r")
 source("src/utils/importPseq.r")
-source("src/utils/guanrank.r")
+source("src/jlb_m1/preprocessing.r")
+source("src/jlb_m1/fit_model.r")
+source("src/jlb_m1/predRes_modified.r")
 
 # Import data
+# ======
 train <- pseq(subset = "train")
-tt <- train
-
-# Removing artifacts samples with NA survival values
-# see https://www.synapse.org/#!Synapse:syn27130803/discussion/threadId=9722
-artifacts <- subset_samples(train, PrevalentHFAIL == 1 &
-                                   Event == 1 &
-                                   Event_time < 0)
-nas <- subset_samples(train, is.na(Event_time) | is.na(Event))
-
-to_remove <- c(samples_names(artifacts),
-               samples_names(nas))
-
-train <- prune_samples(
-            !(sample_names(train) %in% to_remove),
-            train)
-
-# Add guanrank score
-surv <- data.frame(
-    time = get_variable(train, "Event_time"),
-    status = get_variable(train, "Event"),
-    row.names = rownames(sample_data(train))
-)
-surv$time <- surv$time + abs(min(surv$time))
-
-grank <- as.data.frame(guanrank(surv))
-sample_data(train)$guanrank <- grank$rank
 
 
-# Select only Bacteria and Archaea kingdom
-train <- subset_taxa(train, Domain == "k__Bacteria" |
-                            Domain == "k__Archaea")
+# Preprocess data
+# ======
+# Remove samples
+train <- remove_samples(train)
+# Remove taxa
+train <- remove_taxa(train)
+# Normalization
+train <- norm(train)
+# Remove unknown species
+train <- subset_taxa(train, Species != "s__")
 
-# Remove taxa not seen more than 3 times in at least 20% of the samples
-train <- filter_taxa(train,
-                     function(x) sum(x > 3) > (0.2 * length(x)), TRUE)
-# Standardize abundances to the median sequencing depth
-total <- median(sample_sums(train))
-standf <- function(x, t = total) round(t * (x / sum(x)))
-train <- transform_sample_counts(train,
-                                 standf)
-# Filter the taxa using a cutoff of 3.0 for the Coefficient of Variation
-train <- filter_taxa(train,
-                     function(x) sd(x) / mean(x) > 3.0, TRUE)
-# Log2 transformation
-train <- transform_sample_counts(train, function(x) log2(x + 1))
 
+# Fit model
+# ======
+otu <- as.data.frame(t(otu_table(train)@.Data))
+pheno <- sample_data(train)
+data <- cbind.data.frame(pheno, otu)
+
+methods <- c("alassoR", "alassoU",
+             "enet",  "lasso",
+             "lasso-pcvl", "lasso-RIC",
+             "PCAlasso", "ridgelasso")
+
+models <- fit_biospear(data = data,
+                       biomarkers = c(13:205),
+                       surv = c("Event_time", "Event"),
+                       cvrts = c(1:3, 5:6, 10:12),
+                       treatment = "BPTreatment",
+                       methods = methods)
+
+end <- Sys.time()
+time <- difftime(end, start, units = "hours")
+print(time)
+saveRDS(list(
+            train = data,
+            fit = models),
+            file = "src/jlb_m1/results/models.rds")
+
+# Validation
+# ========
+test <- pseq(subset = "test")
+
+test <- remove_taxa(test)
+test <- norm(test)
+
+taxids <- taxa_names(train)
+test <- prune_taxa(taxids, test)
+
+otu_test <- as.data.frame(t(otu_table(test)@.Data))
+pheno_test <- sample_data(test)
+data_test <- cbind.data.frame(pheno_test, otu_test)
+
+predRes(res = models,
+        method = methods,
+        traindata = data,
+        newdata = test,
+        int.cv = TRUE,
+        int.cv.nfold = 5,
+        time = seq(2, 15, 1),
+        trace = TRUE,
+        ncores = 5
+        )
