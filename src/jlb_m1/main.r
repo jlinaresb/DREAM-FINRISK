@@ -11,9 +11,8 @@ start <- Sys.time()
 setwd(here::here())
 source("requirements.r")
 source("src/utils/importPseq.r")
-source("src/jlb_m1/preprocessing.r")
+source("src/utils/prepro_functions.r")
 source("src/jlb_m1/fit_model.r")
-source("src/jlb_m1/predRes_modified.r")
 
 # Import data
 # ======
@@ -22,12 +21,14 @@ train <- pseq(subset = "train")
 # Preprocess data
 # ======
 # Remove samples
-train <- remove_samples(train)
+train <- remove_samples(train,
+                        remove_nas = TRUE,
+                        remove_neg = TRUE)
 # Calculate richness
 richness <- estimate_richness(train,
                         split = TRUE,
                         measures = c("Shannon", "Chao1"))
-
+sample_data(train)$shannon_index <- richness$Shannon
 # Remove taxa
 train <- remove_taxa(train)
 # Normalization
