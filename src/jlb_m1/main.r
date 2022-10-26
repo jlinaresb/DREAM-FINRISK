@@ -1,5 +1,7 @@
 # TODO:
 # - Glomerate by species/genus?
+# - Calculate richness scores
+# - GSEA/GSVA for microbes sets
 # - Feature selection for each taxon level (PCA, FCBF)
 # - Trainning models:
 #     Option 1): Survival + treatment (like anthra project)
@@ -17,17 +19,22 @@ source("src/jlb_m1/predRes_modified.r")
 # ======
 train <- pseq(subset = "train")
 
-
 # Preprocess data
 # ======
 # Remove samples
 train <- remove_samples(train)
+# Calculate richness
+richness <- estimate_richness(train,
+                        split = TRUE,
+                        measures = c("Shannon", "Chao1"))
+
 # Remove taxa
 train <- remove_taxa(train)
 # Normalization
 train <- norm(train)
 # Remove unknown species
 train <- subset_taxa(train, Species != "s__")
+
 
 
 # Fit model
@@ -51,33 +58,9 @@ models <- fit_biospear(data = data,
 end <- Sys.time()
 time <- difftime(end, start, units = "hours")
 print(time)
+
+# Save train data and models
 saveRDS(list(
             train = data,
             fit = models),
             file = "src/jlb_m1/results/models.rds")
-
-
-# Validation
-# ========
-test <- pseq(subset = "test")
-
-test <- remove_taxa(test)
-test <- norm(test)
-
-taxids <- taxa_names(train)
-test <- prune_taxa(taxids, test)
-
-otu_test <- as.data.frame(t(otu_table(test)@.Data))
-pheno_test <- sample_data(test)
-data_test <- cbind.data.frame(pheno_test, otu_test)
-
-predRes(res = models,
-        method = methods,
-        traindata = data,
-        newdata = test,
-        int.cv = TRUE,
-        int.cv.nfold = 5,
-        time = seq(2, 15, 1),
-        trace = TRUE,
-        ncores = 5
-        )
