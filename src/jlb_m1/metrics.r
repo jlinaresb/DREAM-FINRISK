@@ -1,7 +1,10 @@
-setwd("~/git/DREAM-FINRISK/src/jlb_m1/results/")
+setwd(here::here())
+source("src/utils/hosmerTest.R")
+setwd("src/jlb_m1/results/")
+
 experiment <- readRDS("model_diff_exp.rds")
 
-i <- 1
+i <- 8
 # Print C-Index
 t_train <- experiment$train$Event_time
 e_train <- experiment$train$Event
@@ -11,14 +14,15 @@ t_test <- experiment$test$Event_time
 e_test <- experiment$test$Event
 s_test <- experiment$prediction$scores_extval[, i]
 
-cindex_train <- survcomp::concordance.index(s_train, t_train, e_train)
-cindex_train$c.index
-cindex_test <- survcomp::concordance.index(s_test, t_test, e_test)
-cindex_test$c.index
-
-
 # Concordance
 require(survival)
 require(Hmisc)
-xx <- rcorr.cens(exp(-s_test), Surv(t_test, e_test), outx = FALSE)
-xx[1]
+c_train <- rcorr.cens(exp(-s_train), Surv(t_train, e_train), outx = FALSE)
+c_test <- rcorr.cens(exp(-s_test), Surv(t_test, e_test), outx = FALSE)
+
+paste0("C-Index in train set model ",
+        names(experiment$models)[i],
+        " is: ", c_train[1])
+paste0("C-Index in test set model ",
+        names(experiment$models)[i],
+        " is: ", c_test[1])

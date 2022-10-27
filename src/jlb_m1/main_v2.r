@@ -1,5 +1,5 @@
 setwd(here::here())
-experiment_id <- "diff_exp"
+experiment_id <- "diff_exp_nott"
 outdir <- "src/jlb_m1/results/"
 
 start <- Sys.time()
@@ -94,6 +94,8 @@ models <- fit_biospear(data = data_train,
                                  "PrevalentDiabetes", "PrevalentCHD",
                                  "SystolicBP", "NonHDLcholesterol",
                                  "Sex", "shannon_index", "BPTreatment"),
+                       inter = FALSE,
+                       treatment = NULL,
                        methods = methods)
 
 
