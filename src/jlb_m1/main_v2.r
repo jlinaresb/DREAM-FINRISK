@@ -1,44 +1,39 @@
-# TODO:
-# - Glomerate by species/genus?
-# - Feature reduction for each taxon level (PCA, FCBF)
-# - Return scores.csv
-# - Do not remove any sample in test!
-
-
 setwd(here::here())
-experiment_id <- "pca"
+experiment_id <- "diff_exp"
 outdir <- "src/jlb_m1/results/"
 
 start <- Sys.time()
 source("requirements.r")
+source("src/utils/dea.r")
 source("src/utils/importPseq.r")
 source("src/utils/prepro_functions.r")
 source("src/jlb_m1/fit_model.r")
 source("src/jlb_m1/predRes_helper.r")
 
-# Import data
-# ======
+# Load data
 train <- pseq(subset = "train")
 test <- pseq(subset = "test")
 
 
-# Preprocess data
-# ======
-# Remove samples
-train <- remove_samples(train,
-                        remove_nas = TRUE,
-                        remove_neg = FALSE)
-test <- remove_samples(test,
-                       remove_nas = TRUE,
-                       remove_neg = FALSE)
+# Differential Expression
+de <- subset_samples(train, PrevalentHFAIL == 0 &
+                               Smoking == 0 &
+                               BPTreatment == 0 &
+                               PrevalentDiabetes == 0 &
+                               PrevalentCHD == 0 &
+                               BodyMassIndex < 30 &
+                               BodyMassIndex > 18)
 
-# Relabel patients with PrevalentHFAIL
-sample_data(train)[sample_data(train)$PrevalentHFAIL == 1 &
-                   sample_data(train)$Event == 0, ]$Event_time <-
-                   max(sample_data(train)$Event_time)
-sample_data(test)[sample_data(test)$PrevalentHFAIL == 1 &
-                   sample_data(test)$Event == 0, ]$Event_time <-
-                   max(sample_data(test)$Event_time)
+de <- remove_taxa(de, glomby = "Genus")
+de <- subset_taxa(de, Genus != "g__")
+
+sample_data(de)$Event <- as.factor(sample_data(de)$Event)
+sig_tab <- phyloseq_dea(pseq = de,
+                    test = "Wald",
+                    fit_type = "parametric",
+                    alpha = 0.05)
+taxids <- rownames(sig_tab)
+
 
 # Calculate richness
 richness_train <- estimate_richness(
@@ -53,34 +48,37 @@ richness_test <- estimate_richness(
                         measures = c("Shannon"))
 sample_data(test)$shannon_index <- richness_test$Shannon
 
-# Remove and normalization taxa in train
-train <- remove_taxa(train)
-train <- norm(train)
-train <- subset_taxa(train, Species != "s__")
 
-test <- norm(test, filter = FALSE)
-taxids <- taxa_names(train)
+# Prune taxa according differential expression
+train <- prune_taxa(taxids, train)
 test <- prune_taxa(taxids, test)
 
-
-# PCA
-# ======
-otu_train <- t(otu_table(train)@.Data)
-otu_test <- t(otu_table(test)@.Data)
-pca <- prcomp(otu_train, scale = TRUE)
-otu_train_pca <- pca$x[, 1:10]
-otu_test_pca <- predict(pca, newdata = otu_test)[, 1:10]
-
+# Remove samples
+train <- remove_samples(train,
+                        remove_nas = TRUE,
+                        remove_neg = FALSE)
+test <- remove_samples(test,
+                       remove_nas = TRUE,
+                       remove_neg = FALSE)
 
 # Generate data to train
 # =======
+otu_train <- apply(t(otu_table(train)@.Data), 2, function(x) log2(x + 1))
+otu_test <- apply(t(otu_table(test)@.Data), 2, function(x) log2(x + 1))
+
 pheno_train <- sample_data(train)
 pheno_test <- sample_data(test)
-data_train <- cbind.data.frame(pheno_train, otu_train_pca)
-data_test <- cbind.data.frame(pheno_test, otu_test_pca)
+
+data_train <- cbind.data.frame(pheno_train, otu_train)
+data_test <- cbind.data.frame(pheno_test, otu_test)
 
 data_train <- data_train[complete.cases(data_train), ]
-data_test <- data_test[complete.cases(data_test), ]
+data_test <- impute::impute.knn(t(data_test))
+data_test <- as.data.frame(t(data_test$data))
+
+# Relabel patients with PrevalentHFAIL
+data_train$Event_time[data_train$Event_time < 0] <- 15
+data_test$Event_time[data_test$Event_time < 0] <- 15
 
 
 # Fit model
@@ -90,16 +88,16 @@ methods <- c("alassoR", "alassoU",
              "lasso-pcvl", "lasso-RIC",
              "PCAlasso", "ridgelasso")
 models <- fit_biospear(data = data_train,
-                       biomarkers = paste0("PC", 1:10),
+                       biomarkers = grep("taxid", colnames(data_train)),
                        surv = c("Event_time", "Event"),
                        cvrts = c("Age", "BodyMassIndex", "Smoking",
                                  "PrevalentDiabetes", "PrevalentCHD",
                                  "SystolicBP", "NonHDLcholesterol",
-                                 "Sex", "shannon_index"),
-                       treatment = "BPTreatment",
+                                 "Sex", "shannon_index", "BPTreatment"),
                        methods = methods)
 
-environment(predRes2) <- asNamespace('biospear')
+
+environment(predRes2) <- asNamespace("biospear")
 assignInNamespace("predRes", predRes2, ns = "biospear")
 prediction <- predRes2(res = models,
                     method = methods,

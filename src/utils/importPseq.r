@@ -7,14 +7,11 @@
 
 
 pseq <- function(subset) {
-  
   folder_files <- list.files(path = subset)
-  
   # Clinical
   pheno_file <- folder_files[grepl("pheno", folder_files)]
-  pheno <- read.csv(paste0(subset, "/",pheno_file),
+  pheno <- read.csv(paste0(subset, "/", pheno_file),
                       header = TRUE, row.names = 1)
-
   # Tax table
   taxtable <- read.csv(paste0(subset, "/taxtable.csv"),
                          header = TRUE)

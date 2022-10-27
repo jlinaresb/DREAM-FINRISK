@@ -2,15 +2,14 @@
 # Source: http://joey711.github.io/phyloseq-extensions/DESeq2.html
 
 require(phyloseq)
-require(DESeq)
+require(DESeq2)
 require(ggplot2)
 phyloseq_dea <- function(pseq,
-                         target,
                          test = "Wald",
                          fit_type = "parametric",
                          alpha = 0.05) {
 
-    dds <- phyloseq_to_deseq2(pseq, ~target)
+    dds <- phyloseq_to_deseq2(pseq, ~Event)
     dds <- DESeq(dds, test = test, fitType = fit_type)
 
     res <- results(dds, cooksCutoff = FALSE)

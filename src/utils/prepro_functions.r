@@ -30,15 +30,15 @@ remove_samples <- function(pseq,
     return(res)
 }
 
-remove_taxa <- function(pseq) {
+remove_taxa <- function(pseq, glomby = "Species") {
     # Select only Bacteria and Archaea kingdom
-    res <- subset_taxa(pseq, Domain == "k__Bacteria" |
-                             Domain == "k__Archaea")
+    #pseq <- subset_taxa(pseq, Domain == "k__Bacteria" |
+    #                         Domain == "k__Archaea")
     # Remove taxa not seen more than 3 times in at least 20% of the samples
-    res <- filter_taxa(res,
+    res <- filter_taxa(pseq,
                         function(x) sum(x > 3) > (0.2 * length(x)), TRUE)
     # Agglomerate by species
-    res <- tax_glom(res, "Species")
+    res <- tax_glom(res, glomby)
     return(res)
 }
 
