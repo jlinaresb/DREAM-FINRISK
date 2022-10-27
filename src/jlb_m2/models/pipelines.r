@@ -1,6 +1,6 @@
-setwd(here:here())
+setwd(here::here())
 source("src/jlb_m2/models/build_learners.r")
-source("src/jlb_m2/models/pipelines_utils.r")
+source("src/jlb_m2/models/pipeline_utils.r")
 
 rf_pipeline <- function(data,
                         dataname,
