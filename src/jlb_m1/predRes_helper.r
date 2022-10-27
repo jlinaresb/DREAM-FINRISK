@@ -368,6 +368,5 @@ predRes2 <- function(
   class(predRes) <- "predRes"
   return(list(predictions = predRes,
               scores_train = lp.train,
-              scores_intval = lp.int.cv,
               scores_extval = lp.new))
 }

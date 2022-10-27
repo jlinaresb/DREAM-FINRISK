@@ -84,9 +84,7 @@ data_test$Event_time[data_test$Event_time < 0] <- 15
 # Fit model
 # ========
 methods <- c("alassoR", "alassoU",
-             "enet", "lasso",
-             "lasso-pcvl", "lasso-RIC",
-             "PCAlasso", "ridgelasso")
+             "enet")
 models <- fit_biospear(data = data_train,
                        biomarkers = grep("taxid", colnames(data_train)),
                        surv = c("Event_time", "Event"),
@@ -95,7 +93,6 @@ models <- fit_biospear(data = data_train,
                                  "SystolicBP", "NonHDLcholesterol",
                                  "Sex", "shannon_index", "BPTreatment"),
                        inter = FALSE,
-                       treatment = NULL,
                        methods = methods)
 
 
@@ -105,7 +102,7 @@ prediction <- predRes2(res = models,
                     method = methods,
                     traindata = data_train,
                     newdata = data_test,
-                    int.cv = TRUE,
+                    int.cv = FALSE,
                     int.cv.nfold = 5,
                     time = seq(1, 16, 1),
                     trace = TRUE,
