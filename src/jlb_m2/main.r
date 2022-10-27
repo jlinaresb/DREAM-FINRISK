@@ -9,7 +9,6 @@ source("src/utils/prepro_functions.r")
 source("src/utils/guanrank.r")
 source("src/utils/dea.r")
 source("src/jlb_m2/requirements.r")
-source("src/jlb_m2/models/build_learners.r")
 source("src/jlb_m2/models/pipelines.r")
 
 
@@ -124,8 +123,6 @@ rf_pipeline(
     workers = 20,
     outDir = outdir,
     parallel = TRUE,
-    folds = 10,
-    batch_size = 10,
     seed = 1993
 )
 

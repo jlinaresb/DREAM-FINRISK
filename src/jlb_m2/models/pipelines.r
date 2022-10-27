@@ -19,8 +19,6 @@ rf_pipeline <- function(data,
                         workers,
                         outDir,
                         parallel,
-                        folds,
-                        batch_size,
                         seed) {
   set.seed(seed)
   # Make task
@@ -43,8 +41,8 @@ rf_pipeline <- function(data,
   # Parallelization
   if (parallel == TRUE) {
         future::plan(list(
-            future::tweak("multisession", workers = folds),  # outer
-            future::tweak("multisession", workers = batch_size))) # inner
+            future::tweak("multisession", workers = 10),  # outer
+            future::tweak("multisession", workers = 10))) # inner
   }
   # Resampling
   rr <- resample(task,
