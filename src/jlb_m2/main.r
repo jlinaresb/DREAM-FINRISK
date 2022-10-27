@@ -116,7 +116,7 @@ rf_pipeline(
     inner = rsmp("holdout", ratio = 0.7),
     outer = rsmp("cv", folds = 10),
     measure = msr("classif.auc"),
-    method_at = tnr("grid_search", resolution = 30, batch_size = batch_size),
+    method_at = tnr("grid_search", resolution = 30, batch_size = 10),
     method_afs = NULL,
     term_evals = NULL,
     fselector = FALSE,
