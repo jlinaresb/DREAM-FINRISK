@@ -26,7 +26,7 @@ preprocess <- function(task,
   if (normalize == TRUE) {
     nf <- po("scale")
     task <- nf$train(input = list(task))$output
-    print("Features have benn normalized!")
+    print("Features have been normalized!")
   }
   # Filter features
   if (filterFeatures == TRUE) {
@@ -38,24 +38,4 @@ preprocess <- function(task,
   }
 
   return(task)
-}
-
-
-# Nested resampling
-nested_resampling <- function(task,
-                              learner,
-                              method,
-                              nevals = 100,
-                              measure = "classif.ce") {
-
-    rr <- fselect_nested(
-                method = method,
-                task = task,
-                learner = learner,
-                inner_resampling = rsmp("holdout"),
-                outer_resampling = rsmp("cv", folds = 10),
-                measure = msr(measure),
-                term_evals = nevals)
-
-    return(rr)
 }

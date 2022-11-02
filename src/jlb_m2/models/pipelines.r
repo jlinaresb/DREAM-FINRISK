@@ -10,7 +10,6 @@ rf_pipeline <- function(data,
                         normalize,
                         filterFeatures,
                         inner,
-                        outer,
                         measure,
                         method_at,
                         method_afs,
@@ -41,17 +40,61 @@ rf_pipeline <- function(data,
   # Parallelization
   if (parallel == TRUE) {
         future::plan(list(
-            future::tweak("multisession", workers = 10),  # outer
-            future::tweak("multisession", workers = 10))) # inner
+            future::tweak("multisession", workers = 20))) # inner
   }
-  # Resampling
-  rr <- resample(task,
-                 learner,
-                 resampling = outer,
-                 store_models = TRUE)
-  # Save resampling object
-  res <- list(task = task,
-              result = rr)
-  saveRDS(res,
-          file = paste0(outDir, "/rsmp_randomForest_", dataname, ".rds"))
+  # Autotuner
+  model <- learner$train(task)
+  saveRDS(model,
+          file = paste0(outDir, "/model_randomForest_", dataname, ".rds"))
+
+  return(model)
+}
+
+
+surv_pipeline <- function(data,
+                        dataname,
+                        target,
+                        positive,
+                        removeConstant,
+                        normalize,
+                        filterFeatures,
+                        inner,
+                        measure,
+                        method_at,
+                        method_afs,
+                        term_evals,
+                        fselector,
+                        workers,
+                        outDir,
+                        parallel,
+                        seed) {
+  set.seed(seed)
+  # Make task
+  task <- making_task(data,
+                      dataname,
+                      target,
+                      positive)
+  # Preprocess
+  task <- preprocess(task,
+                     removeConstant,
+                     normalize,
+                     filterFeatures)
+  # Learner
+  learner <- coxtime(inner,
+                        measure,
+                        method_at,
+                        method_afs,
+                        term_evals,
+                        fselector)
+  # Parallelization
+  if (parallel == TRUE) {
+        future::plan(list(
+            future::tweak("multisession", workers = 20))) # inner
+  }
+  # Autotuner
+  model <- learner$train(task)
+  saveRDS(model,
+          file = paste0(outDir, "/model_randomForest_", dataname, ".rds"))
+
+  return(model)
 }

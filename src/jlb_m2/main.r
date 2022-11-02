@@ -2,7 +2,7 @@ setwd(here::here())
 experiment_id <- "diff_rf"
 outdir <- "src/jlb_m2/results/"
 
-star <- Sys.time()
+start <- Sys.time()
 source("requirements.r")
 source("src/utils/importPseq.r")
 source("src/utils/prepro_functions.r")
@@ -63,6 +63,7 @@ test <- remove_samples(test,
                        remove_nas = TRUE,
                        remove_neg = FALSE)
 
+
 # Generate data to train
 # =======
 otu_train <- apply(t(otu_table(train)@.Data), 2, function(x) log2(x + 1))
@@ -81,6 +82,17 @@ data_test <- as.data.frame(t(data_test$data))
 # Relabel patients with PrevalentHFAIL
 data_train$Event_time[data_train$Event_time < 0] <- 15
 data_test$Event_time[data_test$Event_time < 0] <- 15
+
+# Convert variables to numeric
+train_pats <- rownames(data_train)
+test_pats <- rownames(data_test)
+data_train <- apply(data_train, 2, function(x) as.numeric(x))
+data_test <- apply(data_test, 2, function(x) as.numeric(x))
+
+rownames(data_train) <- train_pats
+rownames(data_test) <- test_pats
+data_train <- as.data.frame(data_train)
+data_test <- as.data.frame(data_test)
 
 # Calculate guanrank
 gr <- data.frame(
@@ -105,27 +117,35 @@ to_train <- data.frame(
 
 # Run training
 # =====
-rf_pipeline(
-    data = to_train,
-    dataname = experiment_id,
-    target = "target",
-    positive = "high_risk",
-    removeConstant = TRUE,
-    normalize = TRUE,
-    filterFeatures = FALSE,
-    inner = rsmp("holdout", ratio = 0.7),
-    outer = rsmp("cv", folds = 10),
-    measure = msr("classif.auc"),
-    method_at = tnr("grid_search", resolution = 30, batch_size = 10),
-    method_afs = NULL,
-    term_evals = NULL,
-    fselector = FALSE,
-    workers = 20,
-    outDir = outdir,
-    parallel = TRUE,
-    seed = 1993
-)
+res <- rf_pipeline(
+            data = to_train,
+            dataname = experiment_id,
+            target = "target",
+            positive = "high_risk",
+            removeConstant = TRUE,
+            normalize = FALSE,
+            filterFeatures = FALSE,
+            inner = rsmp("cv", folds = 10),
+            measure = msr("classif.prauc"),
+            method_at = tnr("grid_search", resolution = 30, batch_size = 10),
+            method_afs = NULL,
+            term_evals = 20,
+            fselector = FALSE,
+            workers = 20,
+            outDir = outdir,
+            parallel = TRUE,
+            seed = 1993
+        )
 
+
+preds <- res$learner$predict_newdata(data_test, task = NULL)
+
+event <- data_test$Event
+time <- data_test$Event_time
+probs <- preds$prob[, 1]
+
+cindex <- rcorr.cens(probs, Surv(time, event), outx = FALSE)
+print(paste0("C-Index in test set model is: ", cindex[1]))
 end <- Sys.time()
 time <- difftime(end, start, units = "mins")
 print(time)

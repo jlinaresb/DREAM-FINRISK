@@ -28,3 +28,7 @@ randomForest <- function(inner,
                     method_afs)
   return(afs)
 }
+
+
+
+require(mlr3proba)
