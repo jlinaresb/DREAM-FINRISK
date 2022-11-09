@@ -12,5 +12,5 @@ require(survival)
 require(Hmisc)
 require(survivalmodels)
 require(mlr3proba)
-install_pycox(pip = TRUE, install_torch = TRUE)s
-install_keras(pip = TRUE, install_tensorflow = TRUE)
+#install_pycox(pip = TRUE, install_torch = TRUE)
+#install_keras(pip = TRUE, install_tensorflow = TRUE)

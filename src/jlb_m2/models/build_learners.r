@@ -31,4 +31,42 @@ randomForest <- function(inner,
 
 
 
-require(mlr3proba)
+ann_surv <- function(type,
+                     inner,
+                     measure,
+                     method_at,
+                     method_afs,
+                     term_evals,
+                     fselector) {
+
+  # Make learner
+  learner <- lrn(type,
+                 epochs = 100,
+                 optimizer = "adam")
+
+  # Hyperparameter space
+  ps <- ps(
+    dropout = p_dbl(lower = 0, upper = 1),
+    weight_decay = p_dbl(lower = 0, upper = 0.5),
+    learning_rate = p_dbl(lower = 0, upper = 1),
+    nodes = p_int(lower = 1, upper = 32),
+    k = p_int(lower = 1, upper = 20),
+    batch_size = p_int(lower = 24, upper = 500)
+  )
+  ps$trafo <- function(x, param_set) {
+    x$num_nodes <- rep(x$nodes, x$k)
+    x$nodes <- x$k <- NULL
+    return(x)
+  }
+  # Hyperparameters and features tuner
+  afs <- make_tuner(inner,
+                    measure,
+                    learner,
+                    ps,
+                    term_evals,
+                    method_at,
+                    fselector,
+                    method_afs)
+
+  return(afs)
+}

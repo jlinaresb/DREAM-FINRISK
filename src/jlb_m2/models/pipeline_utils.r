@@ -10,6 +10,16 @@ making_task <- function(data, dataname, target, positive) {
     return(task)
 }
 
+making_surv_task <- function(data, dataname, time, event) {
+    data <- as.data.frame(data)
+    # Make task
+    task <- TaskSurv$new(id = dataname,
+                            backend = data,
+                            time = time,
+                            event = event)
+    return(task)
+}
+
 # Preprocess
 preprocess <- function(task,
                        removeConstant,

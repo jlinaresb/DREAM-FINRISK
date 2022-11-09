@@ -53,11 +53,13 @@ rf_pipeline <- function(data,
 
 surv_pipeline <- function(data,
                         dataname,
-                        target,
+                        time,
+                        event,
                         positive,
                         removeConstant,
                         normalize,
                         filterFeatures,
+                        type,
                         inner,
                         measure,
                         method_at,
@@ -70,22 +72,23 @@ surv_pipeline <- function(data,
                         seed) {
   set.seed(seed)
   # Make task
-  task <- making_task(data,
-                      dataname,
-                      target,
-                      positive)
+  task <- making_surv_task(data,
+                           dataname,
+                           time,
+                           event)
   # Preprocess
   task <- preprocess(task,
                      removeConstant,
                      normalize,
                      filterFeatures)
   # Learner
-  learner <- coxtime(inner,
-                        measure,
-                        method_at,
-                        method_afs,
-                        term_evals,
-                        fselector)
+  learner <- ann_surv(type,
+                      inner,
+                      measure,
+                      method_at,
+                      method_afs,
+                      term_evals,
+                      fselector)
   # Parallelization
   if (parallel == TRUE) {
         future::plan(list(
