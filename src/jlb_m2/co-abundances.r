@@ -36,23 +36,6 @@ train <- subset_taxa(train, Species != "s__")
 test <- remove_taxa(test, glomby = "Species")
 train <- subset_taxa(test, Species != "s__")
 
-# Calculate richness
-richness_train <- estimate_richness(
-                        train,
-                        split = TRUE,
-                        measures = c("Shannon", "Observed",
-                                     "Chao1", "ACE", "Simpson",
-                                     "InvSimpson", "Fisher"))
-#sample_data(train)$shannon_index <- richness_train$Shannon
-
-richness_test <- estimate_richness(
-                        test,
-                        split = TRUE,
-                        measures = c("Shannon", "Observed",
-                                     "Chao1", "ACE", "Simpson",
-                                     "InvSimpson", "Fisher"))
-#sample_data(test)$shannon_index <- richness_test$Shannon
-
 require(igraph)
 require(SpiecEasi)
 require(viridis)
