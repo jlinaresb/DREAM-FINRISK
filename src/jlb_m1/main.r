@@ -85,10 +85,7 @@ data_test <- data_test[complete.cases(data_test), ]
 
 # Fit model
 # ========
-methods <- c("alassoR", "alassoU",
-             "enet", "lasso",
-             "lasso-pcvl", "lasso-RIC",
-             "PCAlasso", "ridgelasso")
+methods <- c("enet")
 models <- fit_biospear(data = data_train,
                        biomarkers = paste0("PC", 1:10),
                        surv = c("Event_time", "Event"),
@@ -96,6 +93,7 @@ models <- fit_biospear(data = data_train,
                                  "PrevalentDiabetes", "PrevalentCHD",
                                  "SystolicBP", "NonHDLcholesterol",
                                  "Sex", "shannon_index"),
+                       inter = TRUE,
                        treatment = "BPTreatment",
                        methods = methods)
 
@@ -109,7 +107,7 @@ prediction <- predRes2(res = models,
                     int.cv.nfold = 5,
                     time = seq(1, 16, 1),
                     trace = TRUE,
-                    ncores = 8)
+                    ncores = 20)
 
 end <- Sys.time()
 time <- difftime(end, start, units = "mins")

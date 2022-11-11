@@ -97,7 +97,57 @@ surv_pipeline <- function(data,
   # Autotuner
   model <- learner$train(task)
   saveRDS(model,
-          file = paste0(outDir, "/model_randomForest_", dataname, ".rds"))
+          file = paste0(outDir, "/model_surv_ann_", dataname, ".rds"))
+
+  return(model)
+}
+
+
+xgboost_surv_pipeline <- function(data,
+                                 dataname,
+                                 time,
+                                 event,
+                                 positive,
+                                 removeConstant,
+                                 normalize,
+                                 filterFeatures,
+                                 inner,
+                                 measure,
+                                 method_at,
+                                 method_afs,
+                                 term_evals,
+                                 fselector,
+                                 workers,
+                                 outDir,
+                                 parallel,
+                                 seed) {
+  set.seed(seed)
+  # Make task
+  task <- making_surv_task(data,
+                           dataname,
+                           time,
+                           event)
+  # Preprocess
+  task <- preprocess(task,
+                     removeConstant,
+                     normalize,
+                     filterFeatures)
+  # Learner
+  learner <- xgboost_surv(inner,
+                         measure,
+                         method_at,
+                         method_afs,
+                         term_evals,
+                         fselector)
+  # Parallelization
+  if (parallel == TRUE) {
+        future::plan(list(
+            future::tweak("multisession", workers = 20))) # inner
+  }
+  # Autotuner
+  model <- learner$train(task)
+  saveRDS(model,
+          file = paste0(outDir, "/model_surv_xgboost_", dataname, ".rds"))
 
   return(model)
 }

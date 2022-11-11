@@ -4,3 +4,6 @@ tmp/
 .DS_Store
 src/jlb_m1/results/
 src/jlb_m2/results/
+src/xgboost/
+src/pipeline.rmd
+src/pipeline.html

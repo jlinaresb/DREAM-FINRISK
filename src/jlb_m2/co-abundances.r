@@ -31,10 +31,10 @@ test <- filter_taxa(test,
                      function(x) sum(x > 2) > (0.8 * length(x)), TRUE)
 
 # Agglomerate by Species
-train <- remove_taxa(train, glomby = "Species")
+train <- tax_glom(train, taxrank = "Species")
 train <- subset_taxa(train, Species != "s__")
-test <- remove_taxa(test, glomby = "Species")
-train <- subset_taxa(test, Species != "s__")
+test <- tax_glom(test, taxrank = "Species")
+test <- subset_taxa(test, Species != "s__")
 
 require(igraph)
 require(SpiecEasi)
