@@ -1,0 +1,37 @@
+---
+title: 'DREAM Challenge: FINRISK'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NULL, cache=TRUE)
+options(width=90)
+knitr::opts_knit$set(root.dir = "~/git/DREAM-FINRISK/")
+```
+
+```{r message=FALSE}
+require(phyloseq)
+require(compareGroups)
+source("src/utils/importPseq.r")
+```
+
+```{r}
+# Load train data
+train <- pseq(subset = "train")
+print(train)
+```
+
+```{r}
+# Check clinical variables
+pheno <- data.frame(sample_data(train))
+pheno <- pheno[complete.cases(pheno), ] # remove NA's
+pheno[, c(3:8, 12)] <- apply(pheno[, c(3:8, 12)], 2, function(x) ifelse(x == 1, "yes", "no"))
+tab <- createTable(compareGroups(Event ~ ., data = pheno))
+export2md(tab)
+```
+
+```{r}
+# View table (without NA's)
+DT::datatable(pheno)
+```
+
