@@ -1,124 +1,117 @@
 # TODO:
-# - Glomerate by species/genus?
-# - Feature reduction for each taxon level (PCA, FCBF)
 # - Return scores.csv
-# - Do not remove any sample in test!
-
 
 setwd(here::here())
-experiment_id <- "pca"
+experiment_id <- "prueba"
 outdir <- "src/jlb_m1/results/"
 
 start <- Sys.time()
-source("requirements.r")
-source("src/utils/importPseq.r")
-source("src/utils/prepro_functions.r")
 source("src/jlb_m1/fit_model.r")
 source("src/jlb_m1/predRes_helper.r")
 
-# Import data
+# Preprocess
 # ======
-train <- pseq(subset = "train")
-test <- pseq(subset = "test")
+source("src/preprocessing/preprocessing.r")
 
-
-# Preprocess data
+# Check data
 # ======
-# Remove samples
-train <- remove_samples(train,
-                        remove_nas = TRUE,
-                        remove_neg = FALSE)
-test <- remove_samples(test,
-                       remove_nas = TRUE,
-                       remove_neg = FALSE)
+stopifnot(ncol(x_train) == ncol(x_test))
+stopifnot(colnames(x_train) == colnames(x_test))
+stopifnot(nrow(x_train) == nrow(y_train))
+stopifnot(nrow(x_test) == nrow(y_test))
 
-# Relabel patients with PrevalentHFAIL
-sample_data(train)[sample_data(train)$PrevalentHFAIL == 1 &
-                   sample_data(train)$Event == 0, ]$Event_time <-
-                   max(sample_data(train)$Event_time)
-sample_data(test)[sample_data(test)$PrevalentHFAIL == 1 &
-                   sample_data(test)$Event == 0, ]$Event_time <-
-                   max(sample_data(test)$Event_time)
+train <- cbind.data.frame(x_train, y_train)
+test  <- cbind.data.frame(x_test, y_test)
 
-# Calculate richness
-richness_train <- estimate_richness(
-                        train,
-                        split = TRUE,
-                        measures = c("Shannon"))
-sample_data(train)$shannon_index <- richness_train$Shannon
-
-richness_test <- estimate_richness(
-                        test,
-                        split = TRUE,
-                        measures = c("Shannon"))
-sample_data(test)$shannon_index <- richness_test$Shannon
-
-# Remove and normalization taxa in train
-train <- remove_taxa(train)
-train <- norm(train)
-train <- subset_taxa(train, Species != "s__")
-
-test <- norm(test, filter = FALSE)
-taxids <- taxa_names(train)
-test <- prune_taxa(taxids, test)
-
-
-# PCA
+# What do we do with the negatives?
 # ======
-otu_train <- t(otu_table(train)@.Data)
-otu_test <- t(otu_table(test)@.Data)
-pca <- prcomp(otu_train, scale = TRUE)
-otu_train_pca <- pca$x[, 1:10]
-otu_test_pca <- predict(pca, newdata = otu_test)[, 1:10]
+# Removing them!
+train <- train[-which(train$Event_time < 0), ]
+test <- test[-which(test$Event_time < 0), ]
 
+# NA"s??
+train <- train[complete.cases(train), ]
+test <- test[complete.cases(test), ]
 
-# Generate data to train
-# =======
-pheno_train <- sample_data(train)
-pheno_test <- sample_data(test)
-data_train <- cbind.data.frame(pheno_train, otu_train_pca)
-data_test <- cbind.data.frame(pheno_test, otu_test_pca)
+# Removing PrevalentHFAIL (only 0)
+train <- train[, -grep("PrevalentHFAIL", colnames(train))]
+test <- test[, -grep("PrevalentHFAIL", colnames(test))]
 
-data_train <- data_train[complete.cases(data_train), ]
-data_test <- data_test[complete.cases(data_test), ]
-
+save(train, test, file = "tmp/data_clusters.RData")
 
 # Fit model
 # ========
-methods <- c("enet")
-models <- fit_biospear(data = data_train,
-                       biomarkers = paste0("PC", 1:10),
+cvrts <- c("Age", "BodyMassIndex",
+           "SystolicBP", "NonHDLcholesterol",
+           "Sex")
+tt <- "BPTreatment"
+
+methods <- c("alassoL", "alassoR",
+            "alassoU", "enet", "gboost",
+            "lasso", "lasso-1se",
+            "lasso-AIC", "lasso-BIC", "lasso-HQIC",
+            "lasso-pct", "lasso-pcvl", "lasso-RIC", "modCov",
+            "PCAlasso", "PLSlasso", "ridge", "ridgelasso",
+            "stabSel", "uniFDR")
+models <- fit_biospear(data = train,
+                       biomarkers = setdiff(colnames(x_train), c(cvrts, tt)),
                        surv = c("Event_time", "Event"),
-                       cvrts = c("Age", "BodyMassIndex", "Smoking",
-                                 "PrevalentDiabetes", "PrevalentCHD",
-                                 "SystolicBP", "NonHDLcholesterol",
-                                 "Sex", "shannon_index"),
+                       cvrts = cvrts,
                        inter = TRUE,
-                       treatment = "BPTreatment",
+                       treatment = tt,
                        methods = methods)
 
-environment(predRes2) <- asNamespace('biospear')
+environment(predRes2) <- asNamespace("biospear")
 assignInNamespace("predRes", predRes2, ns = "biospear")
 prediction <- predRes2(res = models,
                     method = methods,
-                    traindata = data_train,
-                    newdata = data_test,
+                    traindata = train,
+                    newdata = test,
                     int.cv = FALSE,
                     int.cv.nfold = 5,
                     time = seq(1, 16, 1),
                     trace = TRUE,
                     ncores = 20)
 
+
+t_train <- train$Event_time
+e_train <- train$Event
+
+t_test <- test$Event_time
+e_test <- test$Event
+
+require(Hmisc)
+m <- names(models)
+lapply(m, function(i) {
+    s_train <- prediction$scores_train[, i]
+    s_test <- prediction$scores_extval[, i]
+    # Concordance
+    c_train <- rcorr.cens(exp(-s_train), Surv(t_train, e_train), outx = FALSE)
+    c_test <- rcorr.cens(exp(-s_test), Surv(t_test, e_test), outx = FALSE)
+    # Print C-Index
+    print(paste0("C-Index in train set model ", i, " is: ", c_train[1]))
+    print(paste0("C-Index in test set model ", i, " is: ", c_test[1]))
+})
+
+
+
 end <- Sys.time()
 time <- difftime(end, start, units = "mins")
 print(time)
 
-
 # Save data and models
 # =======
 saveRDS(list(
-            train = data_train,
-            test = data_test,
+            train = train,
+            test = test,
             models = models,
             prediction = prediction),
             file = paste0(outdir, "model_", experiment_id, ".rds"))
+
+scores <- data.frame(
+    SampleID = rownames(test),
+    Score = exp(-prediction$precitions)
+)
+
+write.csv(scores, quote = FALSE, row.names = FALSE,
+          file = "output/scores.csv")

@@ -54,6 +54,8 @@ richness_test <- estimate_richness(
 data_train <- sample_data(train)
 data_test <- sample_data(test)
 
+data_train <- data.frame(data_train, richness_train)
+data_test <- data.frame(data_test, richness_test)
 
 data_train <- data_train[complete.cases(data_train), ]
 data_test <- impute::impute.knn(t(data_test))
@@ -67,8 +69,7 @@ data_test <- apply(data_test, 2, function(x) as.numeric(x))
 
 rownames(data_train) <- train_pats
 rownames(data_test) <- test_pats
-data_train <- as.data.frame(data_train)
-data_test <- as.data.frame(data_test)
+
 
 # Run training
 # =====

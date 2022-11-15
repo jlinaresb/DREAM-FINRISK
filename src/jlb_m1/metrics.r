@@ -4,7 +4,7 @@ setwd(here::here())
 source("src/utils/hosmerTest.R")
 setwd("src/jlb_m1/results/")
 
-experiment <- readRDS("model_diff_exp_nott.rds")
+experiment <- readRDS("model_pca.rds")
 t_train <- experiment$train$Event_time
 e_train <- experiment$train$Event
 
@@ -22,3 +22,5 @@ lapply(m, function(i) {
     print(paste0("C-Index in train set model ", i, " is: ", c_train[1]))
     print(paste0("C-Index in test set model ", i, " is: ", c_test[1]))
 })
+
+experiment$models
