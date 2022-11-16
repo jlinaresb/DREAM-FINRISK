@@ -120,7 +120,8 @@ DT::datatable(coab_taxa)
 
 # Caculate GSVA
 scores <- get_scores(coab_taxa, train, test, method = "gsva")
-DT::datatable(scores)
+DT::datatable(scores$train)
+DT::datatable(scores$test)
 
 # Create train and test data
 pheno_train <- sample_data(train)

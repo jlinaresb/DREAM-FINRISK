@@ -5,7 +5,6 @@ tmp/
 src/jlb_m1/results/
 src/jlb_m2/results/
 src/xgboost/
-src/pipeline.html
 Rplots.pdf
 .Rhistory
 src/pipeline_cache/
