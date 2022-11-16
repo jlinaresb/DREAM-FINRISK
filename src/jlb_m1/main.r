@@ -1,11 +1,14 @@
-# TODO:
-# - Return scores.csv
-
 setwd(here::here())
-experiment_id <- "prueba"
+experiment_id <- "coab_lasso"
 outdir <- "src/jlb_m1/results/"
+save <- FALSE
 
 start <- Sys.time()
+source("src/jlb_m1/requirements.r")
+source("src/utils/importPseq.r")
+source("src/utils/prepro_functions.r")
+source("src/utils/co-abundances.r")
+source("src/utils/get_scores.r")
 source("src/jlb_m1/fit_model.r")
 source("src/jlb_m1/predRes_helper.r")
 
@@ -20,51 +23,43 @@ stopifnot(colnames(x_train) == colnames(x_test))
 stopifnot(nrow(x_train) == nrow(y_train))
 stopifnot(nrow(x_test) == nrow(y_test))
 
+# Creating train and test data
 train <- cbind.data.frame(x_train, y_train)
 test  <- cbind.data.frame(x_test, y_test)
 
-# What do we do with the negatives?
+# What do we do with ...
 # ======
-# Removing them!
+# Negatives survival values in train and test?
 train <- train[-which(train$Event_time < 0), ]
-test <- test[-which(test$Event_time < 0), ]
+test$Even_time[which(test$Event_time < 0), ] <- 15
 
-# NA"s??
+# NA's values in train and test?
 train <- train[complete.cases(train), ]
-test <- test[complete.cases(test), ]
+test <- missRanger(test, pmm.k = 10, seed = 153)
 
 # Removing PrevalentHFAIL (only 0)
 train <- train[, -grep("PrevalentHFAIL", colnames(train))]
 test <- test[, -grep("PrevalentHFAIL", colnames(test))]
-
-save(train, test, file = "tmp/data_clusters.RData")
 
 # Fit model
 # ========
 cvrts <- c("Age", "BodyMassIndex",
            "SystolicBP", "NonHDLcholesterol",
            "Sex")
-tt <- "BPTreatment"
 
-methods <- c("alassoL", "alassoR",
-            "alassoU", "enet", "gboost",
-            "lasso", "lasso-1se",
-            "lasso-AIC", "lasso-BIC", "lasso-HQIC",
-            "lasso-pct", "lasso-pcvl", "lasso-RIC", "modCov",
-            "PCAlasso", "PLSlasso", "ridge", "ridgelasso",
-            "stabSel", "uniFDR")
 models <- fit_biospear(data = train,
-                       biomarkers = setdiff(colnames(x_train), c(cvrts, tt)),
+                       biomarkers = setdiff(colnames(train), 
+                                            c(cvrts, colnames(y_train))),
                        surv = c("Event_time", "Event"),
                        cvrts = cvrts,
-                       inter = TRUE,
-                       treatment = tt,
-                       methods = methods)
+                       inter = FALSE,
+                       methods = "lasso")
+
 
 environment(predRes2) <- asNamespace("biospear")
 assignInNamespace("predRes", predRes2, ns = "biospear")
 prediction <- predRes2(res = models,
-                    method = methods,
+                    method = "lasso",
                     traindata = train,
                     newdata = test,
                     int.cv = FALSE,
@@ -73,45 +68,20 @@ prediction <- predRes2(res = models,
                     trace = TRUE,
                     ncores = 20)
 
-
-t_train <- train$Event_time
-e_train <- train$Event
-
-t_test <- test$Event_time
-e_test <- test$Event
-
-require(Hmisc)
-m <- names(models)
-lapply(m, function(i) {
-    s_train <- prediction$scores_train[, i]
-    s_test <- prediction$scores_extval[, i]
-    # Concordance
-    c_train <- rcorr.cens(exp(-s_train), Surv(t_train, e_train), outx = FALSE)
-    c_test <- rcorr.cens(exp(-s_test), Surv(t_test, e_test), outx = FALSE)
-    # Print C-Index
-    print(paste0("C-Index in train set model ", i, " is: ", c_train[1]))
-    print(paste0("C-Index in test set model ", i, " is: ", c_test[1]))
-})
-
-
+if (save == TRUE)  {
+    save(train,  test, models, prediction,
+         file = paste0("src/jlb_m1/results/res_", experiment_id, ".rds"))
+}
 
 end <- Sys.time()
 time <- difftime(end, start, units = "mins")
 print(time)
 
-# Save data and models
-# =======
-saveRDS(list(
-            train = train,
-            test = test,
-            models = models,
-            prediction = prediction),
-            file = paste0(outdir, "model_", experiment_id, ".rds"))
-
+# Save scores
 scores <- data.frame(
     SampleID = rownames(test),
-    Score = exp(-prediction$precitions)
+    Score = exp(-prediction$scores_extval)[, 1]
 )
-
+print(head(scores))
 write.csv(scores, quote = FALSE, row.names = FALSE,
           file = "output/scores.csv")
