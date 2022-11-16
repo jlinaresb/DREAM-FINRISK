@@ -9,7 +9,7 @@ options(width=90)
 knitr::opts_knit$set(root.dir = "~/git/DREAM-FINRISK/")
 ```
 
-```{r echo=FALSE}
+```{r include=FALSE}
 # Requirements
 source("src/jlb_m1/requirements.r")
 source("src/utils/importPseq.r")
@@ -21,9 +21,10 @@ source("src/jlb_m1/predRes_helper.r")
 
 # Additional packages
 require(compareGroups)
+require(Hmisc)
 ```
 
-# TRAIN AND TEST DATA
+## TRAIN AND TEST DATA
 
 ```{r}
 # Load train data
@@ -50,8 +51,6 @@ export2md(tab)
 DT::datatable(pheno)
 ```
 
-Some samples are artifacts: [Issue 1]()
-
 ```{r}
 # Remove artifacts
 pheno2 <- pheno[-which(pheno$PrevalentHFAIL == "yes" & 
@@ -59,12 +58,10 @@ pheno2 <- pheno[-which(pheno$PrevalentHFAIL == "yes" &
 ```
 
 
-Event time at year 15 in synthetic data is over-represented in both train and test subsets.
-
 ```{r}
 # Plot Event time distribution
-p1 <- hist(pheno$Event_time[which(pheno$Event == "yes")], 10)
-p2 <- hist(pheno$Event_time[which(pheno$Event == "no")], 10)
+hist(pheno$Event_time[which(pheno$Event == "yes")], 10)
+hist(pheno$Event_time[which(pheno$Event == "no")], 10)
 
 # Plot Age
 hist(pheno$Age[which(pheno$Event == "yes")], 10)
@@ -78,7 +75,7 @@ hist(pheno$BodyMassIndex[which(pheno$Event == "no")], 10)
 
 ## MICROBIOME PREPROCESSING PIPELINE
 
-```{r message=FALSE, include=FALSE}
+```{r message=FALSE}
 # Load data
 train <- pseq(subset = "train")
 test <- pseq(subset = "test")
@@ -197,19 +194,13 @@ prediction <- predRes2(res = models,
                     time = seq(1, 16, 1),
                     trace = TRUE,
                     ncores = 20)
-```
 
-
-# CALCULATE C-INDEX IN TEST
-
-```{r}
 t_train <- train$Event_time
 e_train <- train$Event
 
 t_test <- test$Event_time
 e_test <- test$Event
 
-require(Hmisc)
 m <- names(models)
 lapply(m, function(i) {
     s_train <- prediction$scores_train[, i]
@@ -218,8 +209,8 @@ lapply(m, function(i) {
     c_train <- rcorr.cens(exp(-s_train), Surv(t_train, e_train), outx = FALSE)
     c_test <- rcorr.cens(exp(-s_test), Surv(t_test, e_test), outx = FALSE)
     # Print C-Index
-    print(paste0("C-Index in train set model ", i, " is: ", c_train[1]))
-    print(paste0("C-Index in test set model ", i, " is: ", c_test[1]))
+    print(paste0("C-Index in train set ", i, " is: ", c_train[1]))
+    print(paste0("C-Index in test set ", i, " is: ", c_test[1]))
 })
 ```
 
