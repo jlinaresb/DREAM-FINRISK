@@ -9,19 +9,34 @@ options(width=90)
 knitr::opts_knit$set(root.dir = "~/git/DREAM-FINRISK/")
 ```
 
-```{r message=FALSE}
-require(phyloseq)
-require(compareGroups)
+```{r echo=FALSE}
+# Requirements
+source("src/jlb_m1/requirements.r")
 source("src/utils/importPseq.r")
+source("src/utils/prepro_functions.r")
+source("src/utils/co-abundances.r")
+source("src/utils/get_scores.r")
+source("src/jlb_m1/fit_model.r")
+source("src/jlb_m1/predRes_helper.r")
+
+# Additional packages
+require(compareGroups)
 ```
+
+# TRAIN AND TEST DATA
 
 ```{r}
 # Load train data
 train <- pseq(subset = "train")
 print(train)
+
+test <- pseq(subset = "test")
+print(test)
 ```
 
-```{r}
+# EXPLORING SYNTHETIC CLINICAL DATA
+
+```{r warning=FALSE}
 # Check clinical variables
 pheno <- data.frame(sample_data(train))
 pheno <- pheno[complete.cases(pheno), ] # remove NA's
@@ -33,5 +48,188 @@ export2md(tab)
 ```{r}
 # View table (without NA's)
 DT::datatable(pheno)
+```
+
+Some samples are artifacts: [Issue 1]()
+
+```{r}
+# Remove artifacts
+pheno2 <- pheno[-which(pheno$PrevalentHFAIL == "yes" & 
+                     pheno$Event == "yes"), ]
+```
+
+
+Event time at year 15 in synthetic data is over-represented in both train and test subsets.
+
+```{r}
+# Plot Event time distribution
+p1 <- hist(pheno$Event_time[which(pheno$Event == "yes")], 10)
+p2 <- hist(pheno$Event_time[which(pheno$Event == "no")], 10)
+
+# Plot Age
+hist(pheno$Age[which(pheno$Event == "yes")], 10)
+hist(pheno$Age[which(pheno$Event == "no")], 10)
+
+# Plot BMI
+hist(pheno$BodyMassIndex[which(pheno$Event == "yes")], 10)
+hist(pheno$BodyMassIndex[which(pheno$Event == "no")], 10)
+
+```
+
+## MICROBIOME PREPROCESSING PIPELINE
+
+```{r message=FALSE, include=FALSE}
+# Load data
+train <- pseq(subset = "train")
+test <- pseq(subset = "test")
+
+# Remove samples
+train <- remove_samples(train,
+                        remove_nas = TRUE,
+                        remove_neg = FALSE)
+
+
+# Agglomerate by Species
+train <- tax_glom(train, taxrank =  "Species")
+train <- subset_taxa(train, Species != "s__")
+test <- tax_glom(test, taxrank = "Species")
+test <- subset_taxa(test, Species != "s__")
+
+# Calculate richness
+richness_train <- estimate_richness(
+                        train,
+                        split = TRUE,
+                        measures = c("Shannon", "Observed",
+                                     "Chao1", "Simpson",
+                                     "InvSimpson", "Fisher"))
+
+richness_test <- estimate_richness(
+                        test,
+                        split = TRUE,
+                        measures = c("Shannon", "Observed",
+                                     "Chao1", "Simpson",
+                                     "InvSimpson", "Fisher"))
+
+# Filter taxa by counts
+train <- filter_taxa(train,
+                     function(x) sum(x > 2) > (0.8 * length(x)), TRUE)
+
+# Calculate co-abundances
+coab_taxa <- co_abundances(train)
+DT::datatable(coab_taxa)
+
+# Caculate GSVA
+scores <- get_scores(coab_taxa, train, test, method = "gsva")
+DT::datatable(scores)
+
+# Create train and test data
+pheno_train <- sample_data(train)
+x_train <- data.frame(pheno_train[, -c(8, 9)],
+                      richness_train,
+                      scores$train)
+y_train <- pheno_train[, c("Event_time", "Event")]
+
+pheno_test <- sample_data(test)
+x_test <- data.frame(pheno_test[, -c(8, 9)],
+                     richness_test,
+                     scores$test)
+y_test <- pheno_test[, c("Event_time", "Event")]
+```
+
+
+# PREPARE DATA TO TRAIN
+
+```{r}
+# Creating train and test data
+train <- cbind.data.frame(x_train, y_train)
+test  <- cbind.data.frame(x_test, y_test)
+
+# What do we do with ...
+# ======
+# Negatives survival values in train and test?
+train <- train[-which(train$Event_time < 0), ]
+test$Even_time[which(test$Event_time < 0), ] <- 15
+
+# NA's values in train and test?
+train <- train[complete.cases(train), ]
+test <- missRanger(test, pmm.k = 10, seed = 153)
+
+# Removing PrevalentHFAIL (only 0)
+train <- train[, -grep("PrevalentHFAIL", colnames(train))]
+test <- test[, -grep("PrevalentHFAIL", colnames(test))]
+
+DT::datatable(train)
+```
+
+
+# FIT THE MODEL
+
+```{r}
+# Fit model
+# ========
+cvrts <- c("Age", "BodyMassIndex",
+           "SystolicBP", "NonHDLcholesterol",
+           "Sex")
+
+(biomarkers <- setdiff(colnames(train), c(cvrts, colnames(y_train))))
+models <- fit_biospear(data = train,
+                       biomarkers = biomarkers,
+                       surv = c("Event_time", "Event"),
+                       cvrts = cvrts,
+                       inter = FALSE,
+                       methods = "lasso")
+
+print(models)
+```
+
+# PREDICT IN TEST
+
+```{r}
+environment(predRes2) <- asNamespace("biospear")
+assignInNamespace("predRes", predRes2, ns = "biospear")
+prediction <- predRes2(res = models,
+                    method = "lasso",
+                    traindata = train,
+                    newdata = test,
+                    int.cv = FALSE,
+                    int.cv.nfold = 5,
+                    time = seq(1, 16, 1),
+                    trace = TRUE,
+                    ncores = 20)
+```
+
+
+# CALCULATE C-INDEX IN TEST
+
+```{r}
+t_train <- train$Event_time
+e_train <- train$Event
+
+t_test <- test$Event_time
+e_test <- test$Event
+
+require(Hmisc)
+m <- names(models)
+lapply(m, function(i) {
+    s_train <- prediction$scores_train[, i]
+    s_test <- prediction$scores_extval[, i]
+    # Concordance
+    c_train <- rcorr.cens(exp(-s_train), Surv(t_train, e_train), outx = FALSE)
+    c_test <- rcorr.cens(exp(-s_test), Surv(t_test, e_test), outx = FALSE)
+    # Print C-Index
+    print(paste0("C-Index in train set model ", i, " is: ", c_train[1]))
+    print(paste0("C-Index in test set model ", i, " is: ", c_test[1]))
+})
+```
+
+
+# SAVE OUTPUT
+```{r}
+# Save scores
+scores <- data.frame(
+    SampleID = rownames(test),
+    Score = exp(-prediction$scores_extval)[, 1]
+)
+print(head(scores))
 ```
 
