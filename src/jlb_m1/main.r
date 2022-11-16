@@ -31,7 +31,7 @@ test  <- cbind.data.frame(x_test, y_test)
 # ======
 # Negatives survival values in train and test?
 train <- train[-which(train$Event_time < 0), ]
-test$Even_time[which(test$Event_time < 0), ] <- 15
+test$Event_time[which(test$Event_time < 0)] <- 15
 
 # NA's values in train and test?
 train <- train[complete.cases(train), ]
