@@ -221,11 +221,13 @@ lapply(m, function(i) {
 # Save scores
 scores <- data.frame(
     SampleID = rownames(test),
-    Score = exp(-prediction$scores_extval)[, 1],
+    Score = prediction$scores_extval[, 1],
     time = t_test,
-    event = e_test
+    event = e_test,
+    age = test$Age
 )
 print(hist(scores$Score))
 DT::datatable(scores)
+print(plot(scores$Score, scores$age))
 ```
 
