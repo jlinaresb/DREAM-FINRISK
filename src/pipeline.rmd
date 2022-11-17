@@ -113,6 +113,7 @@ train <- filter_taxa(train,
 
 # Calculate co-abundances
 coab_taxa <- co_abundances(train)
+print(table(coab_taxa$clusters))
 DT::datatable(coab_taxa)
 
 # Caculate GSVA
@@ -222,6 +223,7 @@ scores <- data.frame(
     SampleID = rownames(test),
     Score = exp(-prediction$scores_extval)[, 1]
 )
-print(head(scores))
+print(hist(scores$Score))
+DT::datatable(scores)
 ```
 
