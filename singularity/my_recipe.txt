@@ -31,3 +31,15 @@ R --slave  -e 'devtools::install_github(c("zdk123/SpiecEasi"))'
 #	 \
 #	&& apt-get clean \
 #	&& rm -rf /var/lib/apt/lists/*
+
+
+# To build a singularity image:
+# sudo singularity build my_singularity_image.sif my_recipe.txt
+
+# To run R script from singularity image:
+# singularity exec my_singularity_image.sif Rscript my_code.r 
+
+
+
+
+
