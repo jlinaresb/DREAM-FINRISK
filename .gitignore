@@ -9,3 +9,5 @@ Rplots.pdf
 .Rhistory
 src/pipeline_cache/
 src/pipeline_files/
+singularity/
+src/jlb_m1/model1.sif

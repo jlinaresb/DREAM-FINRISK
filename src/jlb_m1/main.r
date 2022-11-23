@@ -1,20 +1,34 @@
-setwd(here::here())
-experiment_id <- "coab_lasso"
-outdir <- "src/jlb_m1/results/"
-save <- FALSE
+# Argument parsing
+args <- commandArgs(trailingOnly = TRUE)
+Team_Name_Submission_Number <- "SB2"
+inputdir <- args[1]
+outputdir <- file.path(inputdir, Team_Name_Submission_Number, "output")
+
+print(Team_Name_Submission_Number)
+print(inputdir)
+print(outputdir)
+
+dir.create(outputdir, recursive = TRUE)
 
 start <- Sys.time()
-source("src/jlb_m1/requirements.r")
-source("src/utils/importPseq.r")
-source("src/utils/prepro_functions.r")
-source("src/utils/co-abundances.r")
-source("src/utils/get_scores.r")
-source("src/jlb_m1/fit_model.r")
-source("src/jlb_m1/predRes_helper.r")
+
+source("/utils/requirements.r")
+source("/utils/importPseq.r")
+source("/utils/prepro_functions.r")
+source("/utils/co-abundances.r")
+source("/utils/get_scores.r")
+source("/utils/fit_model.r")
+source("/utils/predRes_helper.r")
 
 # Preprocess
 # ======
-source("src/preprocessing/preprocessing.r")
+source("/utils/preprocessing.r")
+
+# Agglomerate by Species
+train <- tax_glom(train, taxrank =  "Species")
+train <- subset_taxa(train, Species != "s__")
+test <- tax_glom(test, taxrank = "Species")
+test <- subset_taxa(test, Species != "s__")
 
 # Check data
 # ======
@@ -48,7 +62,7 @@ cvrts <- c("Age", "BodyMassIndex",
            "Sex")
 
 models <- fit_biospear(data = train,
-                       biomarkers = setdiff(colnames(train), 
+                       biomarkers = setdiff(colnames(train),
                                             c(cvrts, colnames(y_train))),
                        surv = c("Event_time", "Event"),
                        cvrts = cvrts,
@@ -80,8 +94,8 @@ print(time)
 # Save scores
 scores <- data.frame(
     SampleID = rownames(test),
-    Score = exp(-prediction$scores_extval)[, 1]
+    Score = exp(prediction$scores_extval)[, 1]
 )
 print(head(scores))
 write.csv(scores, quote = FALSE, row.names = FALSE,
-          file = "output/scores.csv")
+          file = file.path(outputdir, "scores.csv"))

@@ -12,7 +12,7 @@ pseq <- function(inputdir, subset) {
   folder_files <- list.files(path = dir)
   # Clinical
   pheno_file <- folder_files[grepl("pheno", folder_files)]
-  pheno <- read.csv(file.path(dir, "/", pheno_file))
+  pheno <- read.csv(file.path(dir, "/", pheno_file), row.names = 1)
   # Tax table
   taxtable <- read.csv(file.path(dir, "/taxtable.csv"))
   rownames(taxtable) <- paste("taxid", rownames(taxtable), sep = "_")
@@ -20,7 +20,7 @@ pseq <- function(inputdir, subset) {
 
   # OTUs
   counts_file <- folder_files[grepl("counts", folder_files)]
-  counts <- read.csv(file.path(dir, counts_file))
+  counts <- read.csv(file.path(dir, counts_file), row.names = 1)
   rownames(counts) <- rownames(taxtable)
   counts <- as.matrix(counts)
 

@@ -1,5 +1,3 @@
-setwd(here::here())
-
 # Load data
 train <- pseq(inputdir = inputdir, subset = "train")
 test <- pseq(inputdir = inputdir, subset = "test")
