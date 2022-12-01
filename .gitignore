@@ -11,3 +11,5 @@ src/pipeline_cache/
 src/pipeline_files/
 singularity/
 src/jlb_m1/model1.sif
+src/jlb_m1/model1.zip
+src/jlb_m1/code.zip
