@@ -2,12 +2,6 @@
 train <- pseq(inputdir = inputdir, subset = "train")
 test <- pseq(inputdir = inputdir, subset = "test")
 
-# Remove samples
-train <- remove_samples(train,
-                        remove_nas = TRUE,
-                        remove_neg = FALSE)
-
-
 # Agglomerate by Species
 train <- tax_glom(train, taxrank =  "Species")
 train <- subset_taxa(train, Species != "s__")

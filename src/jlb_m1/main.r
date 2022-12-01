@@ -12,23 +12,17 @@ dir.create(outputdir, recursive = TRUE)
 
 start <- Sys.time()
 
-source("/utils/requirements.r")
-source("/utils/importPseq.r")
-source("/utils/prepro_functions.r")
-source("/utils/co-abundances.r")
-source("/utils/get_scores.r")
-source("/utils/fit_model.r")
-source("/utils/predRes_helper.r")
+source("/mnt/utils/requirements.r")
+source("/mnt/utils/importPseq.r")
+source("/mnt/utils/prepro_functions.r")
+source("/mnt/utils/co-abundances.r")
+source("/mnt/utils/get_scores.r")
+source("/mnt/utils/fit_model.r")
+source("/mnt/utils/predRes_helper.r")
 
 # Preprocess
 # ======
-source("/utils/preprocessing.r")
-
-# Agglomerate by Species
-train <- tax_glom(train, taxrank =  "Species")
-train <- subset_taxa(train, Species != "s__")
-test <- tax_glom(test, taxrank = "Species")
-test <- subset_taxa(test, Species != "s__")
+source("/mnt/utils/preprocessing.r")
 
 # Check data
 # ======
@@ -69,6 +63,7 @@ models <- fit_biospear(data = train,
                        inter = FALSE,
                        methods = "lasso")
 
+print(models)
 
 environment(predRes2) <- asNamespace("biospear")
 assignInNamespace("predRes", predRes2, ns = "biospear")
@@ -78,7 +73,7 @@ prediction <- predRes2(res = models,
                     newdata = test,
                     int.cv = FALSE,
                     int.cv.nfold = 5,
-                    time = seq(1, 16, 1),
+                    time = seq(1, 15, 1),
                     trace = TRUE,
                     ncores = 20)
 

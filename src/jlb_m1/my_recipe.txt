@@ -3,14 +3,14 @@ Bootstrap: docker
 FROM: bioconductor/bioconductor_docker:devel
 
 %labels
-  Version v2.0
+  Version v1.0
 
 %help
-  Singularity image for DreamChallenge
+  Singularity image for DreamChallenge - Biospear lasso model
 
 %files
-  main.r  /
-  utils/* /utils 
+  main.r  /mnt/
+  utils/* /mnt/utils 
 
 %post
 
@@ -27,4 +27,4 @@ R --slave  -e 'install.packages(c("biospear", "devtools", "igraph", "dplyr", "mi
 R --slave  -e 'devtools::install_github(c("zdk123/SpiecEasi"))'
 
 %runscript
-  Rscript /main.r "$@"
+  Rscript /mnt/main.r "$@"
