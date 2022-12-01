@@ -82,7 +82,7 @@ time <- difftime(end, start, units = "mins")
 print(time)
 
 risk <- exp(prediction$scores_extval)[, 1]
-risk <- risk / risk + 1
+# risk <- risk / risk + 1
 
 # Save scores
 scores <- data.frame(
