@@ -1,14 +1,17 @@
 # Load data
+print("Importing data ...")
 train <- pseq(inputdir = inputdir, subset = "train")
 test <- pseq(inputdir = inputdir, subset = "test")
 
 # Agglomerate by Species
+print("Agglomerating by species ...")
 train <- tax_glom(train, taxrank =  "Species")
 train <- subset_taxa(train, Species != "s__")
 test <- tax_glom(test, taxrank = "Species")
 test <- subset_taxa(test, Species != "s__")
 
 # Calculate richness
+print("Calculating richness indexes ...")
 richness_train <- estimate_richness(
                         train,
                         split = TRUE,
@@ -24,13 +27,16 @@ richness_test <- estimate_richness(
                                      "InvSimpson", "Fisher"))
 
 # Filter taxa by counts
+print("Filter NZV taxa ...")
 train <- filter_taxa(train,
                      function(x) sum(x > 2) > (0.8 * length(x)), TRUE)
 
 # Calculate co-abundances
+print("Calculating co-abundances clusters ...")
 coab_taxa <- co_abundances(train)
 
 # Caculate GSVA
+print("Extract GSVA scores by each cluster ...")
 scores <- get_scores(coab_taxa, train, test, method = "gsva")
 
 # Create train and test data

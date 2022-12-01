@@ -32,6 +32,7 @@ stopifnot(nrow(x_train) == nrow(y_train))
 stopifnot(nrow(x_test) == nrow(y_test))
 
 # Creating train and test data
+print("Creating train and test data ...")
 train <- cbind.data.frame(x_train, y_train)
 test  <- cbind.data.frame(x_test, y_test)
 
@@ -55,6 +56,7 @@ cvrts <- c("Age", "BodyMassIndex",
            "SystolicBP", "NonHDLcholesterol",
            "Sex")
 
+print("Fitting the model ...")
 models <- fit_biospear(data = train,
                        biomarkers = setdiff(colnames(train),
                                             c(cvrts, colnames(y_train))),
@@ -67,6 +69,7 @@ print(models)
 
 environment(predRes2) <- asNamespace("biospear")
 assignInNamespace("predRes", predRes2, ns = "biospear")
+print("Predict in test data ...")
 prediction <- predRes2(res = models,
                     method = "lasso",
                     traindata = train,
