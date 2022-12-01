@@ -85,7 +85,10 @@ time <- difftime(end, start, units = "mins")
 print(time)
 
 risk <- exp(prediction$scores_extval)[, 1]
-# risk <- risk / risk + 1
+normalize <- function(x, na.rm = TRUE) {
+    return((x- min(x)) /(max(x)-min(x)))
+}
+risk <- normalize(risk)
 
 # Save scores
 scores <- data.frame(
