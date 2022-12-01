@@ -82,19 +82,17 @@ prediction <- predRes2(res = models,
                     trace = TRUE,
                     ncores = 20)
 
-if (save == TRUE)  {
-    save(train,  test, models, prediction,
-         file = paste0("src/jlb_m1/results/res_", experiment_id, ".rds"))
-}
-
 end <- Sys.time()
 time <- difftime(end, start, units = "mins")
 print(time)
 
+risk <- exp(prediction$scores_extval)[, 1]
+risk <- risk / risk + 1
+
 # Save scores
 scores <- data.frame(
     SampleID = rownames(test),
-    Score = exp(prediction$scores_extval)[, 1]
+    Score = risk
 )
 print(head(scores))
 write.csv(scores, quote = FALSE, row.names = FALSE,
