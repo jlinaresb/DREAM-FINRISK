@@ -78,15 +78,15 @@ prediction <- predRes2(res = models,
                     int.cv.nfold = 5,
                     time = seq(1, 15, 1),
                     trace = TRUE,
-                    ncores = 20)
+                    ncores = 8)
 
 end <- Sys.time()
 time <- difftime(end, start, units = "mins")
 print(time)
 
-risk <- exp(prediction$scores_extval)[, 1]
+risk <- exp(prediction)[, 1]
 normalize <- function(x, na.rm = TRUE) {
-    return((x- min(x)) /(max(x)-min(x)))
+    return((x - min(x)) / (max(x) - min(x)))
 }
 risk <- normalize(risk)
 
