@@ -10,6 +10,10 @@ Rplots.pdf
 src/pipeline_cache/
 src/pipeline_files/
 singularity/
-src/jlb_m1/model1.sif
-src/jlb_m1/model1.zip
-src/jlb_m1/code.zip
+
+src/jlb_m2/SB2_2/
+src/gacox_m3/SB2_3/
+
+*.zip
+*.tar.gz
+*.sif

@@ -1,0 +1,34 @@
+Bootstrap: docker
+# Use Bioconductor as base image
+FROM: bioconductor/bioconductor_docker:devel
+
+%labels
+  Version v1.0
+
+%help
+  Singularity image for DreamChallenge - Genetic algorithm with Cox model
+
+%files
+  main.r  /mnt/
+  utils/* /mnt/utils 
+  pulsar_0.3.8.tar.gz /mnt/
+
+%post
+
+# Already installed in the image: "BiocManager", "survival"
+# Part of other dependencies: "magrittr" (tidyverse),
+
+## Install packages from source
+R --slave -e 'install.packages("/mnt/pulsar_0.3.8.tar.gz", repos = NULL, type = "source")'
+
+## Install Bioconductor packages
+R --slave  -e 'BiocManager::install(c("phyloseq", "GSVA"))'
+
+## Install CRAN packages
+R --slave  -e 'install.packages(c("devtools", "igraph", "dplyr", "missRanger", "GA", "survival", "ResourceSelection", "Hmisc", "sigmoid", "caret"))'
+
+## Install from GitHub
+R --slave  -e 'devtools::install_github(c("zdk123/SpiecEasi"))'
+
+%runscript
+  Rscript /mnt/main.r "$@"

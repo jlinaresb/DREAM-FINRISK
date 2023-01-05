@@ -1,151 +1,101 @@
-setwd(here::here())
-experiment_id <- "diff_rf"
-outdir <- "src/jlb_m2/results/"
+# Argument parsing
+args <- commandArgs(trailingOnly = TRUE)
+Team_Name_Submission_Number <- "SB2_2"
+inputdir <- args[1]
+outputdir <- file.path(inputdir, Team_Name_Submission_Number, "output")
+
+print(Team_Name_Submission_Number)
+print(inputdir)
+print(outputdir)
+
+dir.create(outputdir, recursive = TRUE)
 
 start <- Sys.time()
-source("requirements.r")
-source("src/utils/importPseq.r")
-source("src/utils/prepro_functions.r")
-source("src/utils/guanrank.r")
-source("src/utils/dea.r")
-source("src/jlb_m2/requirements.r")
-source("src/jlb_m2/models/pipelines.r")
+source("/mnt/utils/requirements.r")
+source("/mnt/utils/importPseq.r")
+source("/mnt/utils/prepro_functions.r")
+source("/mnt/utils/get_scores.r")
+source("/mnt/utils/co-abundances.r")
 
+source("/mnt//models/tuning_utils.r")
+source("/mnt/models/build_learners.r")
+source("/mnt/models/pipeline_utils.r")
+source("/mnt/models/pipelines.r")
 
-# Load data
-train <- pseq(subset = "train")
-test <- pseq(subset = "test")
-
-
-# Differential Expression
-de <- subset_samples(train, PrevalentHFAIL == 0 &
-                               Smoking == 0 &
-                               BPTreatment == 0 &
-                               PrevalentDiabetes == 0 &
-                               PrevalentCHD == 0 &
-                               BodyMassIndex < 30 &
-                               BodyMassIndex > 18)
-
-de <- remove_taxa(de, glomby = "Genus")
-de <- subset_taxa(de, Genus != "g__")
-
-sample_data(de)$Event <- as.factor(sample_data(de)$Event)
-sig_tab <- phyloseq_dea(pseq = de,
-                    test = "Wald",
-                    fit_type = "parametric",
-                    alpha = 0.05)
-taxids <- rownames(sig_tab)
-
-
-# Calculate richness
-richness_train <- estimate_richness(
-                        train,
-                        split = TRUE,
-                        measures = c("Shannon"))
-sample_data(train)$shannon_index <- richness_train$Shannon
-
-richness_test <- estimate_richness(
-                        test,
-                        split = TRUE,
-                        measures = c("Shannon"))
-sample_data(test)$shannon_index <- richness_test$Shannon
-
-
-# Prune taxa according differential expression
-train <- prune_taxa(taxids, train)
-test <- prune_taxa(taxids, test)
-
-# Remove samples
-train <- remove_samples(train,
-                        remove_nas = TRUE,
-                        remove_neg = FALSE)
-test <- remove_samples(test,
-                       remove_nas = TRUE,
-                       remove_neg = FALSE)
-
-
-# Generate data to train
+# Preprocess
 # =======
-otu_train <- apply(t(otu_table(train)@.Data), 2, function(x) log2(x + 1))
-otu_test <- apply(t(otu_table(test)@.Data), 2, function(x) log2(x + 1))
+source("/mnt/utils/preprocessing.r")
 
-pheno_train <- sample_data(train)
-pheno_test <- sample_data(test)
+# Check data
+# ======
+stopifnot(ncol(x_train) == ncol(x_test))
+stopifnot(colnames(x_train) == colnames(x_test))
+stopifnot(nrow(x_train) == nrow(y_train))
+stopifnot(nrow(x_test) == nrow(y_test))
 
-data_train <- cbind.data.frame(pheno_train, otu_train)
-data_test <- cbind.data.frame(pheno_test, otu_test)
+# Creating train and test data
+print("Creating train and test data ...")
+train <- cbind.data.frame(x_train, y_train)
+test  <- cbind.data.frame(x_test, y_test)
 
-data_train <- data_train[complete.cases(data_train), ]
-data_test <- impute::impute.knn(t(data_test))
-data_test <- as.data.frame(t(data_test$data))
+# What do we do with ...
+# ======
+# Negatives survival values in train and test?
+train <- train[-which(train$Event_time < 0), ]
+test$Event_time[which(test$Event_time < 0)] <- 15
 
-# Relabel patients with PrevalentHFAIL
-data_train$Event_time[data_train$Event_time < 0] <- 15
-data_test$Event_time[data_test$Event_time < 0] <- 15
+# NA's values in train and test?
+train <- train[complete.cases(train), ]
+test <- missRanger(test, pmm.k = 10, seed = 153)
 
-# Convert variables to numeric
-train_pats <- rownames(data_train)
-test_pats <- rownames(data_test)
-data_train <- apply(data_train, 2, function(x) as.numeric(x))
-data_test <- apply(data_test, 2, function(x) as.numeric(x))
+# Removing PrevalentHFAIL (only 0)
+train <- train[, -grep("PrevalentHFAIL", colnames(train))]
+test <- test[, -grep("PrevalentHFAIL", colnames(test))]
 
-rownames(data_train) <- train_pats
-rownames(data_test) <- test_pats
-data_train <- as.data.frame(data_train)
-data_test <- as.data.frame(data_test)
-
-# Calculate guanrank
-gr <- data.frame(
-    time = data_train$Event_time,
-    status = data_train$Event,
-    row.names = rownames(data_train))
-gr <- as.data.frame(guanrank(gr))
-
-low_risk <- gr[which(gr$rank < 0.45), ]
-high_risk <- gr[which(gr$rank > 0.7), ]
-
-low_risk$target <- "low_risk"
-high_risk$target <- "high_risk"
-data <- rbind.data.frame(high_risk, low_risk)
-data_train <- data_train[match(rownames(data), rownames(data_train)), ]
-
-to_train <- data.frame(
-    subset(data_train, select = -c(Event, Event_time)),
-    target = data$target,
-    row.names = rownames(data_train)
-)
 
 # Run training
 # =====
-res <- rf_pipeline(
-            data = to_train,
-            dataname = experiment_id,
-            target = "target",
-            positive = "high_risk",
+res <- xgboost_surv_pipeline(
+            data = train,
+            dataname = "xgboost_survival",
+            time = "Event_time",
+            event = "Event",
             removeConstant = TRUE,
             normalize = FALSE,
             filterFeatures = FALSE,
-            inner = rsmp("cv", folds = 10),
-            measure = msr("classif.prauc"),
-            method_at = tnr("grid_search", resolution = 30, batch_size = 10),
+            inner = rsmp("cv", folds = 5),
+            measure = msr("surv.cindex"),
+            method_at = tnr("grid_search", resolution = 20, batch_size = 10),
             method_afs = NULL,
-            term_evals = 20,
             fselector = FALSE,
-            workers = 20,
-            outDir = outdir,
+            term_evals = NULL,
+            workers = 10,
+            outDir = NULL,
             parallel = TRUE,
             seed = 1993
         )
 
 
-preds <- res$learner$predict_newdata(data_test, task = NULL)
+# Predictions
+# =====
+print("Making predictions in test data ...")
+preds <- res$learner$predict_newdata(test)
 
-event <- data_test$Event
-time <- data_test$Event_time
-probs <- preds$prob[, 1]
+normalize <- function(x, na.rm = TRUE) {
+    return((x - min(x)) / (max(x) - min(x)))
+}
 
-cindex <- rcorr.cens(probs, Surv(time, event), outx = FALSE)
-print(paste0("C-Index in test set model is: ", cindex[1]))
-end <- Sys.time()
-time <- difftime(end, start, units = "mins")
-print(time)
+scores <- data.frame(
+    SampleID = rownames(test),
+    Score = normalize(exp(preds$lp))
+)
+
+probs <- scores$Score
+time <- test$Event_time
+event <- test$Event
+
+cindex <- Hmisc::rcorr.cens(probs, Surv(time, event), outx = FALSE)
+print(paste0("C-Index in test set model is: ", 1 - cindex[1]))
+
+write.csv(scores, quote = FALSE, row.names = FALSE,
+          file = file.path(outputdir, "scores.csv"))
