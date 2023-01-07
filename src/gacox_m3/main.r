@@ -91,7 +91,7 @@ result <- ga(
   pcrossover = 0.9,
   elitism = 10, 
   maxiter = 1000,
-  parallel = detectCores(),
+  parallel = parallel::detectCores(),
   seed = 1993)
 
 saveRDS(result, file = "~/git/DREAM-FINRISK/tmp/ga_cox_m3.rds")
