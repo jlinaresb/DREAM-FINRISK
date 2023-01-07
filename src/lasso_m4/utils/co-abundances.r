@@ -9,7 +9,7 @@
 
 co_abundances <- function(pseq) {
 
-     pargs <- list(seed = 666, ncores = 1, rep.num = 50)
+     pargs <- list(seed = 666, ncores = 8, rep.num = 50)
      spiec <- spiec.easi(pseq,
                          method = "glasso",
                          sel.criterion = "stars",
