@@ -36,7 +36,7 @@ R --slave  -e 'install.packages(c("mlr3", "mlr3fselect", "mlr3tuning", "mlr3lear
 R --slave -e 'install.packages("/mnt/mlr3extralearners-0.6.0.tar.gz", repos = NULL, type = "source")'
 
 ## Install from r-universe
-install.packages("mlr3proba", repos = "https://mlr-org.r-universe.dev")
+R --slave -e 'install.packages("mlr3proba", repos = "https://mlr-org.r-universe.dev")'
 
 ## Install from GitHub
 R --slave  -e 'devtools::install_github(c("zdk123/SpiecEasi"))'
