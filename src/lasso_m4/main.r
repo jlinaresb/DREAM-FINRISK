@@ -21,6 +21,7 @@ source(file.path(code_path, "utils/co-abundances.r"))
 source(file.path(code_path, "utils/get_scores.r"))
 source(file.path(code_path, "utils/fit_model.r"))
 source(file.path(code_path, "utils/predRes_helper.r"))
+source(file.path(code_path, "utils/holmes_test.r"))
 
 # Preprocess
 # ======
@@ -70,9 +71,9 @@ pred <- as.vector(prediction)
 pred <- normalize(pred)
 
 # C-Index in test
-rcorr.cens(-pred, Surv(test$Event_time, test$Event))[1]
+print(rcorr.cens(-pred, Surv(test$Event_time, test$Event))[1])
 # Hoslem test
-HosLem.test(Surv(test$Event_time, test$Event), pred)$pval
+print(HosLem.test(Surv(test$Event_time, test$Event), pred)$pval)
 
 
 # Save scores
