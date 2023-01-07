@@ -138,7 +138,7 @@ formulacox <- formula(form)
 coxmodel <- coxph(formulacox,train[,variables])
 predicted <- predict(coxmodel,subset(testF,select=-c(Event_time,Event)),type = "risk")
 predictedNormalized <- normalize(predicted)
-print(hoslem.test(g = 10,x = predictedNormalized,y = testF$Event))
+print(hoslem.test(g = 10,x = testF$Event ,y = predictedNormalized))
 # Save scores
 scores <- data.frame(
   SampleID = rownames(test),

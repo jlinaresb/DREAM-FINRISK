@@ -86,14 +86,15 @@ result <- ga(
   type = "binary",
   fitness = fitness,
   nBits = nbits,
-  popSize = 5000,
-  pmutation = 0.9,
+  popSize = 200,
+  pmutation = 0.5,
   pcrossover = 0.9,
   elitism = 10, 
-  maxiter = 500,
-  parallel = 20,
+  maxiter = 1000,
+  parallel = detectCores(),
   seed = 1993)
 
+saveRDS(result, file = "~/git/DREAM-FINRISK/tmp/ga_cox_m3.rds")
 
 # Extract best solution
 solution <- which.min(rowSums(result@solution))

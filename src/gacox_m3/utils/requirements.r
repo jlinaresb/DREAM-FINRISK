@@ -11,4 +11,5 @@ require(survival)
 require(Hmisc)
 require(sigmoid)
 require(caret)
+require(parallel)
 
