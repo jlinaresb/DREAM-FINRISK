@@ -53,7 +53,7 @@ fitness <- function(col) {
   fit <- coxph(f, trainPart)
   
   # Prediction in partition test
-  prediction <- predict(fit, testPart, type = "risk")
+  prediction <- predict(fit, testPart, type = "lp")
   
   # Scale predictions
   prediction <- sigmoid(prediction, method = "logistic")
