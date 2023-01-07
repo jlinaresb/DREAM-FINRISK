@@ -1,0 +1,1 @@
+pheno=read.csv("/home/usuario/Desktop/DREAM-FINRISK-master/src/samu_m1/train_and_test/test/pheno_test.csv")
