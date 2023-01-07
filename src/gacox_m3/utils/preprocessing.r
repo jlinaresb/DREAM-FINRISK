@@ -34,15 +34,19 @@ disbiosis_test <- calculate_f_b_ratio(test_filt)
 sample_data(train)$disbiosis <- disbiosis_train
 sample_data(test)$disbiosis <- disbiosis_test
 
+# Relative Abundance of phylos 
+print("Calculating relative abundance of each phylo ...")
+train_ph <- tax_glom(train_relab, taxrank =  "Phylum")
+test_ph <- tax_glom(test_relab, taxrank = "Phylum")
 
-# # Relative Abundance of phylos 
-# print("Calculating relative abundance of each phylo ...")
-# train_ph <- tax_glom(train_relab, taxrank =  "Phylum")
-# test_ph <- tax_glom(test_relab, taxrank = "Phylum")
-# 
-# train_phylos <- t(otu_table(train_ph))
-# colnames(train_phylos) <- tax_table(train_ph)[,2]
+train_ph <- subset_taxa(train_ph, Domain %in% c("k__Archaea", "k__Bacteria"))
+test_ph  <- subset_taxa(test_ph, Domain %in% c("k__Archaea", "k__Bacteria"))
 
+train_phylos <- t(train_ph@otu_table@.Data)
+colnames(train_phylos) <- tax_table(train_ph)[,2]
+
+test_phylos <- t(test_ph@otu_table@.Data)
+colnames(test_phylos) <- tax_table(test_ph)[,2]
 
 # Calculate richness
 print("Calculating richness indexes ...")
@@ -77,12 +81,14 @@ scores <- get_scores(coab_taxa, train, test, method = "gsva")
 pheno_train <- sample_data(train)
 x_train <- data.frame(pheno_train[, -c(8, 9)],
                       richness_train,
+                      train_phylos,
                       scores$train)
 y_train <- pheno_train[, c("Event_time", "Event")]
 
 pheno_test <- sample_data(test)
 x_test <- data.frame(pheno_test[, -c(8, 9)],
                      richness_test,
+                     test_phylos,
                      scores$test)
 y_test <- pheno_test[, c("Event_time", "Event")]
 

@@ -20,8 +20,8 @@ source(file.path(code_path , "utils/holmes_test.r"))
 
 # Preprocess
 # =======
-#source(file.path(code_path , "utils/preprocessing.r"))
-load("~/git/DREAM-FINRISK/tmp/data_new.RData")
+source(file.path(code_path , "utils/preprocessing.r"))
+#load("~/git/DREAM-FINRISK/tmp/data_new.RData")
 
 # Run Genetic Algorithm
 # ========
