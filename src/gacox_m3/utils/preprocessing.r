@@ -122,4 +122,4 @@ train <- train[, -grep("PrevalentHFAIL", colnames(train))]
 test <- test[, -grep("PrevalentHFAIL", colnames(test))]
 
 
-save(train, test, file = "~/git/DREAM-FINRISK/tmp/data_new.RData")
+#save(train, test, file = "~/git/DREAM-FINRISK/tmp/data_new.RData")

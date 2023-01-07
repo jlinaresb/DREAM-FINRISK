@@ -98,7 +98,7 @@ result <- ga(
   parallel = parallel::detectCores(),
   seed = 1993)
 
-saveRDS(result, file = "~/git/DREAM-FINRISK/tmp/ga_cox_m3.rds")
+#saveRDS(result, file = "~/git/DREAM-FINRISK/tmp/ga_cox_m3.rds")
 
 # Extract best solution
 solution <- which.min(rowSums(result@solution))
