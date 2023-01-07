@@ -14,8 +14,6 @@ singularity/
 src/jlb_m2/SB2_2/
 src/gacox_m3/SB2_3/
 
-src/lasso_m4/
-
 *.zip
 *.tar.gz
 *.sif
