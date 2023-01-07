@@ -1,0 +1,45 @@
+Bootstrap: docker
+# Use Bioconductor as base image
+FROM: bioconductor/bioconductor_docker:devel
+
+%labels
+  Version v1.0
+
+%help
+  Singularity image for DreamChallenge - Biospear xgboost model
+
+%files
+  main.r  /mnt/
+  utils/* /mnt/utils 
+  models/* /mnt/models
+  pulsar_0.3.8.tar.gz /mnt/
+  mlr3extralearners-0.6.0.tar.gz /mnt/
+
+%post
+
+# Already installed in the image: "BiocManager", "survival"
+# Part of other dependencies: "magrittr" (tidyverse),
+
+## Install packages from source
+R --slave -e 'install.packages("/mnt/pulsar_0.3.8.tar.gz", repos = NULL, type = "source")'
+
+## Install Bioconductor packages
+R --slave  -e 'BiocManager::install(c("phyloseq", "GSVA"))'
+
+## Install CRAN packages
+R --slave  -e 'install.packages(c("devtools", "igraph", "dplyr", "missRanger"))'
+
+## Install CRAN packages (mlr3)
+R --slave  -e 'install.packages(c("mlr3", "mlr3fselect", "mlr3tuning", "mlr3learners",
+                                  "mlr3filters", "mlr3pipelines", "mlr3misc", "Hmisc"))'
+
+R --slave -e 'install.packages("/mnt/mlr3extralearners-0.6.0.tar.gz", repos = NULL, type = "source")'
+
+## Install from r-universe
+install.packages("mlr3proba", repos = "https://mlr-org.r-universe.dev")
+
+## Install from GitHub
+R --slave  -e 'devtools::install_github(c("zdk123/SpiecEasi"))'
+
+%runscript
+  Rscript /mnt/main.r "$@"
