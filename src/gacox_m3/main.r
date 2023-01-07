@@ -53,7 +53,7 @@ fitness <- function(col) {
   fit <- coxph(f, trainPart)
   
   # Prediction in partition test
-  prediction <- predict(fit, testPart, type = "lp")
+  prediction <- predict(fit, testPart, type = "risk")
   
   # Scale predictions
   prediction <- sigmoid(prediction, method = "logistic")
@@ -66,6 +66,8 @@ fitness <- function(col) {
   
   # Add penalty in case of h <<< 0.05 (modify?)
   if (h < 1e-150) {
+    c <- c - 0.4
+  } else if (h < 1e-100) {
     c <- c - 0.3
   } else if (h < 1e-50) {
     c <- c - 0.2
@@ -77,7 +79,7 @@ fitness <- function(col) {
     c <- c + 0.1
   }
   
-  return(c)
+  return(h)
 }
 
 # Genetic algorithm
@@ -89,6 +91,7 @@ result <- ga(
   popSize = 200,
   pmutation = 0.5,
   pcrossover = 0.9,
+  run = 10,
   elitism = 10, 
   maxiter = 1000,
   monitor = TRUE,
