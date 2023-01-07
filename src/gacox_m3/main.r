@@ -79,7 +79,7 @@ fitness <- function(col) {
     c <- c + 0.1
   }
   
-  return(h)
+  return(c)
 }
 
 # Genetic algorithm
@@ -91,7 +91,7 @@ result <- ga(
   popSize = 200,
   pmutation = 0.5,
   pcrossover = 0.9,
-  run = 10,
+  run = 50,
   elitism = 10, 
   maxiter = 1000,
   monitor = TRUE,
