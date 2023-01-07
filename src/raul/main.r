@@ -13,13 +13,13 @@ dir.create(outputdir, recursive = TRUE)
 
 start <- Sys.time()
 
-source("requirements.r")
-source("importPseq.r")
-source("prepro_functions.r")
-source("co-abundances.r")
-source("get_scores.r")
-source("fit_model.r")
-source("predRes_helper.r")
+code_path <- "~/git/DREAM-FINRISK/src/raul/"
+
+source(file.path(code_path, "requirements.r"))
+source(file.path(code_path, "importPseq.r"))
+source(file.path(code_path, "prepro_functions.r"))
+source(file.path(code_path, "co-abundances.r"))
+source(file.path(code_path, "get_scores.r"))
 
 # Preprocess
 # ======

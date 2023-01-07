@@ -1,6 +1,5 @@
 # Load data
 print("Importing data ...")
-inputdir="./"
 train <- pseq(inputdir = inputdir, subset = "train")
 test <- pseq(inputdir = inputdir, subset = "test")
 
