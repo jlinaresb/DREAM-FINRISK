@@ -91,6 +91,7 @@ result <- ga(
   pcrossover = 0.9,
   elitism = 10, 
   maxiter = 1000,
+  monitor = TRUE,
   parallel = parallel::detectCores(),
   seed = 1993)
 
