@@ -12,7 +12,7 @@ dir.create(outputdir, recursive = TRUE)
 
 start <- Sys.time()
 
-code_path <- "~/git/DREAM-FINRISK/src/lasso_m4/"
+code_path <- "/mnt"
 
 source(file.path(code_path, "utils/requirements.r"))
 source(file.path(code_path, "utils/importPseq.r"))
