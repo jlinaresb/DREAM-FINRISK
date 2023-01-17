@@ -60,9 +60,14 @@ surv <- "Surv(Event_time, Event) ~"
 f <- as.formula(paste0(surv, paste(names(selected_betas),collapse='+')))
 model <- coxph(f, train)
 
-# Make prediction (absolute risk)
-# ===
-pred <- Coxar(model, years = 15)
+# Risk Prediction
+# ====
+risk = function(model, newdata, time) {
+  as.numeric(1-summary(survfit(model, newdata = newdata, se.fit = F, conf.int = F), times = time)$surv)
+}
+
+pred <- risk(mod, test, time = 15)
+
 
 
 end <- Sys.time()
