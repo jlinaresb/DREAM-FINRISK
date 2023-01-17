@@ -66,9 +66,7 @@ risk = function(model, newdata, time) {
   as.numeric(1-summary(survfit(model, newdata = newdata, se.fit = F, conf.int = F), times = time)$surv)
 }
 
-pred <- risk(mod, test, time = 15)
-
-
+pred <- risk(model, test, time = 15)
 
 end <- Sys.time()
 time <- difftime(end, start, units = "mins")
