@@ -1,6 +1,6 @@
 # Argument parsing
 args <- commandArgs(trailingOnly = TRUE)
-Team_Name_Submission_Number <- "SB2_4"
+Team_Name_Submission_Number <- "SB2_final"
 inputdir <- args[1]
 outputdir <- file.path(inputdir, Team_Name_Submission_Number, "output")
 
