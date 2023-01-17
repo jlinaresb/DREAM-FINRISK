@@ -43,8 +43,8 @@ models <- fit_biospear(data = train,
                        cvrts = cvrts,
                        inter = FALSE,
                        methods = method)
-
-saveRDS(models, file = "~/git/DREAM-FINRISK/lasso_model.rds")
+save(train, test, file = "~/git/DREAM-FINRISK/tmp/data_last.RData")
+saveRDS(models, file = "~/git/DREAM-FINRISK/tmp/lasso_model.rds")
 
 # environment(predRes2) <- asNamespace("biospear")
 # assignInNamespace("predRes", predRes2, ns = "biospear")
