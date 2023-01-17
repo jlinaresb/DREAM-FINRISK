@@ -8,9 +8,10 @@ library(survival)
 library(dplyr) # %>%
 library(microbiome)
 library(Hmisc) 
-source("./modelperf_aki.R")
+source("c:/Users/josel/git/DREAM-FINRISK/src/baseline/modelperf_aki.R")
 
-args=(commandArgs(TRUE))
+# args=(commandArgs(TRUE))
+args <- "c:/Users/josel/git/DREAM-FINRISK"
 PARAM <- list()
 #this argument is to specify the path of input folder
 #the input folder structure is similar to DreamHF.zip both for synthetic and real dataset
@@ -18,7 +19,7 @@ PARAM$folder.R <- paste0(args[1])
 #one output file (score.csv) has to be created in Team_Name_Submission_Number folder
 #in bellow example your submission name is : FINRISK_TEST_1, please change to your submission name
 #please avoid using (.) in your team name
-dir.create(file.path(PARAM$folder.R, "FINRISK_TEST_2","output"))
+dir.create(file.path(PARAM$folder.R, "FINRISK_TEST_2","output"), recursive = TRUE)
 PARAM$folder.data <- paste0(PARAM$folder.R, "/")
 PARAM$folder.result <- paste0(PARAM$folder.data, "FINRISK_TEST_2/output/")
 
