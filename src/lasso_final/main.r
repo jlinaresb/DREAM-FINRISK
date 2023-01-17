@@ -21,8 +21,8 @@ source(file.path(code_path, "utils/co-abundances.r"))
 source(file.path(code_path, "utils/get_scores.r"))
 source(file.path(code_path, "utils/fit_model.r"))
 # source(file.path(code_path, "utils/predRes_helper.r"))
-source(file.path(code_path, "utils/holmes_test.r"))
-source(file.path(code_path, "utils/modelperf_aki.R"))
+# source(file.path(code_path, "utils/holmes_test.r"))
+# source(file.path(code_path, "utils/modelperf_aki.R"))
 
 
 # Preprocess
@@ -45,9 +45,6 @@ models <- fit_biospear(data = train,
                        cvrts = cvrts,
                        inter = FALSE,
                        methods = method)
-
-# Make the prediction
-
 
 # Build cox with all train data
 # ====
