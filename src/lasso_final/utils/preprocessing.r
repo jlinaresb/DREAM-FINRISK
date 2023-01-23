@@ -104,17 +104,15 @@ stopifnot(nrow(x_train) == nrow(y_train))
 # Creating train and test data
 print("Creating train and test data ...")
 train <- cbind.data.frame(x_train, y_train)
-# test  <- cbind.data.frame(x_test, y_test)
+#test  <- cbind.data.frame(x_test, y_test)
 test <- as.data.frame(x_test)
-test$Event_time <- NA
-test$Event <- NA
 
 
 # What do we do with ...
 # ======
 # Negatives survival values in train and test?
 train <- train[-which(train$Event_time < 0), ]
-test$Event_time[which(test$Event_time < 0)] <- 15
+#test$Event_time[which(test$Event_time < 0)] <- 15
 
 # NA's values in train and test?
 train <- train[complete.cases(train), ]
@@ -125,4 +123,4 @@ train <- train[, -grep("PrevalentHFAIL", colnames(train))]
 test <- test[, -grep("PrevalentHFAIL", colnames(test))]
 
 
-# save(train, test, file = "~/git/DREAM-FINRISK/tmp/data_new.RData")
+#save(train, test, file = "~/git/DREAM-FINRISK/tmp/data_new.RData")
