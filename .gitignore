@@ -1,5 +1,6 @@
 train/
 test/
+scoring/
 tmp/
 .DS_Store
 src/jlb_m1/results/

@@ -1,7 +1,7 @@
 # Load data
 print("Importing data ...")
 train <- pseq(inputdir = inputdir, subset = "train")
-test <- pseq(inputdir = inputdir, subset = "test")
+test <- pseq(inputdir = inputdir, subset = "scoring")
 
 # Agglomerate by Species
 print("Agglomerating by species ...")
@@ -86,11 +86,11 @@ x_train <- data.frame(pheno_train[, -c(8, 9)],
 y_train <- pheno_train[, c("Event_time", "Event")]
 
 pheno_test <- sample_data(test)
-x_test <- data.frame(pheno_test[, -c(8, 9)],
+x_test <- data.frame(pheno_test,
                      richness_test,
                      test_phylos,
                      scores$test)
-y_test <- pheno_test[, c("Event_time", "Event")]
+# y_test <- pheno_test[, c("Event_time", "Event")]
 
 
 # Check data
@@ -98,13 +98,16 @@ y_test <- pheno_test[, c("Event_time", "Event")]
 stopifnot(ncol(x_train) == ncol(x_test))
 stopifnot(colnames(x_train) == colnames(x_test))
 stopifnot(nrow(x_train) == nrow(y_train))
-stopifnot(nrow(x_test) == nrow(y_test))
+# stopifnot(nrow(x_test) == nrow(y_test))
 
 
 # Creating train and test data
 print("Creating train and test data ...")
 train <- cbind.data.frame(x_train, y_train)
-test  <- cbind.data.frame(x_test, y_test)
+# test  <- cbind.data.frame(x_test, y_test)
+test <- as.data.frame(x_test)
+test$Event_time <- NA
+test$Event <- NA
 
 
 # What do we do with ...

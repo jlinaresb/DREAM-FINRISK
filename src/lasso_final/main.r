@@ -1,6 +1,6 @@
 # Argument parsing
 args <- commandArgs(trailingOnly = TRUE)
-Team_Name_Submission_Number <- "SB2_final"
+Team_Name_Submission_Number <- "SB2_Final_Submission"
 inputdir <- args[1]
 outputdir <- file.path(inputdir, Team_Name_Submission_Number, "output")
 
@@ -68,12 +68,6 @@ pred <- risk(model, test, time = 15)
 end <- Sys.time()
 time <- difftime(end, start, units = "mins")
 print(time)
-
-
-# C-Index in test
-print(rcorr.cens(-pred, Surv(test$Event_time, test$Event))[1])
-# Hoslem test
-print(HosLem.test(Surv(test$Event_time, test$Event), pred)$pval)
 
 
 # Save scores
