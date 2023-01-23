@@ -1,5 +1,5 @@
 # Prediction of Heart Failure risk using biomarker selection in penalized regression models from metagenomic data
-Jose Liñares-Blanco <sup>1</sup>, Samuel Pérez-Fernández <sup>1</sup>, Marina Vargas <sup>1</sup>, Ivan Ellson <sup>1</sup>, Juan A. Villatoro <sup>1</sup>, Raul López-Domínguez <sup>1</sup>, Jordi Martorell-Marugan <sup>1</sup>, Daniel Toro-Domínguez <sup>1</sup>, Adrián García-Moreno <sup>1</sup> & Pedro Carmona <sup>1</sup>. 
+Jose Liñares-Blanco <sup>1</sup>, Samuel Pérez-Fernández <sup>1</sup>, Marina Vargas <sup>1</sup>, Ivan Ellson-Lancho <sup>1</sup>, Juan A. Villatoro <sup>1</sup>, Raul López-Domínguez <sup>1</sup>, Jordi Martorell-Marugan <sup>1</sup>, Daniel Toro-Domínguez <sup>1</sup>, Adrián García-Moreno <sup>1</sup> & Pedro Carmona <sup>1</sup>. 
 
 <sup>1</sup>  *GENYO. Centre for Genomics and Oncological Research: Pfizer, University of Granada, Andalusian Regional Goverment, PTS Granada, Avenida de la Ilustración 114, 18016, Granada, Spain*
 
@@ -12,7 +12,7 @@ In order to reduce the high dimensionality from metagenomic features, we extract
 
 
 ### Co-ocurrence network analysis
-To examine co-ocurrence patterns in the metagenomic data, we grouped all taxa at species level and looked for sinificant correlations between different species sequence abundances using SparCC method (from the [(SpiecEasi)](https://github.com/zdk123/SpiecEasi)  package in R). Only those genera with significant correlations (both positives and negatives, with p < 0.01) by bootstrapping 50 times were included in the networks. We created a network from all patients in train dataset, where a node represents a specie, and an edge between two species represents a significant correlation in abundances between the pair. To calculate p-values for the network statistics, we performed 500 permutations of the network. After cleaning the network, we aim to finding community structure between species. We ran an unsupervised two-step method for community detection called [Louvain](https://arxiv.org/abs/0803.0476), setting 4 as resolution value. 
+To examine co-ocurrence patterns in the metagenomic data, we grouped all taxa at species level by summatory and looked for significant correlations between different species sequence abundances using SparCC method (from the [(SpiecEasi)](https://github.com/zdk123/SpiecEasi)  package in R). Only those genera with significant correlations (both positives and negatives, with p < 0.01) by bootstrapping 50 times were included in the networks. We created a network from all patients in train dataset, where a node represents a specie, and an edge between two species represents a significant correlation in abundances between the pair. To calculate p-values for the network statistics, we performed 500 permutations of the network. After cleaning the network, we aim to finding community structure between species. We ran an unsupervised two-step method for community detection called [Louvain](https://arxiv.org/abs/0803.0476), setting 4 as resolution value. 
 
 
 ### Microbial set variation analysis
