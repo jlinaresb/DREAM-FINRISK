@@ -1,0 +1,256 @@
+---
+title: 'FINRISK DREAM Challenge - SB2 solution'
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, comment = NULL, cache=TRUE)
+options(width=90)
+knitr::opts_knit$set(root.dir = "~/git/DREAM-FINRISK/src/lasso_final")
+```
+
+```{r include=FALSE}
+start <- Sys.time()
+```
+
+```{r include=FALSE}
+
+# Arguments
+code_path <- "~/git/DREAM-FINRISK/src/lasso_final/"
+inputdir <- "~/git/DREAM-FINRISK/"
+
+# Requirements
+source(file.path(code_path, "utils/requirements.r"))
+source(file.path(code_path, "utils/importPseq.r"))
+source(file.path(code_path, "utils/prepro_functions.r"))
+source(file.path(code_path, "utils/co-abundances.r"))
+source(file.path(code_path, "utils/get_scores.r"))
+source(file.path(code_path, "utils/fit_model.r"))
+
+# Additional packages
+require(compareGroups)
+require(Hmisc)
+```
+
+## PREPROCESSING
+
+### Load data
+```{r}
+# Load data
+print("Importing data ...")
+train <- pseq(inputdir = inputdir, subset = "train")
+test <- pseq(inputdir = inputdir, subset = "scoring")
+
+print(train)
+print(test)
+```
+
+### Agglomerating by Species
+```{r}
+# Agglomerate by Species
+print("Agglomerating by species ...")
+train <- tax_glom(train, taxrank =  "Species")
+train <- subset_taxa(train, Species != "s__")
+test  <- tax_glom(test, taxrank = "Species")
+test  <- subset_taxa(test, Species != "s__")
+
+print(train)
+print(test)
+```
+
+### Disbiosis score
+```{r}
+# Relative abundance
+print("Transforming into relative abundance ...")
+train_relab <- transform_sample_counts(train, function(x) x / sum(x) )
+test_relab  <- transform_sample_counts(test, function(x) x / sum(x) )
+
+# Calculate disbiosis scores
+print("Calculating disbiosis scores ...")
+train_filt <- subset_taxa(train_relab, Phylum %in% c("p__Firmicutes","p__Bacteroidetes"))
+test_filt  <- subset_taxa(test_relab, Phylum %in% c("p__Firmicutes","p__Bacteroidetes"))
+
+calculate_f_b_ratio <- function(data){
+  f_tax <- subset_taxa(data, Phylum == "p__Firmicutes")
+  b_tax <- subset_taxa(data, Phylum == "p__Bacteroidetes")
+  
+  f_abundance <- sample_sums(f_tax)
+  b_abundance <- sample_sums(b_tax)
+  return(f_abundance / b_abundance)
+}
+
+disbiosis_train <- calculate_f_b_ratio(train_filt)
+disbiosis_test <- calculate_f_b_ratio(test_filt)
+sample_data(train)$disbiosis <- disbiosis_train
+sample_data(test)$disbiosis <- disbiosis_test
+
+print(head(disbiosis_train))
+```
+
+### Relative abundance of phylos
+```{r}
+# Relative Abundance of phylos 
+print("Calculating relative abundance of each phylo ...")
+train_ph <- tax_glom(train_relab, taxrank =  "Phylum")
+test_ph <- tax_glom(test_relab, taxrank = "Phylum")
+
+train_ph <- subset_taxa(train_ph, Domain %in% c("k__Archaea", "k__Bacteria"))
+test_ph  <- subset_taxa(test_ph, Domain %in% c("k__Archaea", "k__Bacteria"))
+
+train_phylos <- t(train_ph@otu_table@.Data)
+colnames(train_phylos) <- tax_table(train_ph)[,2]
+
+test_phylos <- t(test_ph@otu_table@.Data)
+colnames(test_phylos) <- tax_table(test_ph)[,2]
+
+dim(train_phylos)
+print(colnames(train_phylos))
+```
+
+### Calculate richness
+```{r}
+# Calculate richness
+print("Calculating richness indexes ...")
+richness_train <- estimate_richness(
+                        train,
+                        split = TRUE,
+                        measures = c("Shannon", "Observed",
+                                     "Chao1", "Simpson",
+                                     "InvSimpson", "Fisher"))
+
+richness_test <- estimate_richness(
+                        test,
+                        split = TRUE,
+                        measures = c("Shannon", "Observed",
+                                     "Chao1", "Simpson",
+                                     "InvSimpson", "Fisher"))
+
+```
+
+### Calculate co-abundances
+```{r}
+# Filter taxa by counts
+print("Filter NZV taxa ...")
+train <- filter_taxa(train,
+                     function(x) sum(x > 2) > (0.8 * length(x)), TRUE)
+
+# Calculate co-abundances
+print("Calculating co-abundances clusters ...")
+coab_taxa <- co_abundances(train)
+DT::datatable(coab_taxa)
+
+# Caculate GSVA
+print("Extract GSVA scores by each cluster ...")
+scores <- get_scores(coab_taxa, train, test, method = "gsva")
+
+# Create train and test data
+pheno_train <- sample_data(train)
+x_train <- data.frame(pheno_train[, -c(8, 9)],
+                      richness_train,
+                      train_phylos,
+                      scores$train)
+y_train <- pheno_train[, c("Event_time", "Event")]
+
+pheno_test <- sample_data(test)
+x_test <- data.frame(pheno_test,
+                     richness_test,
+                     test_phylos,
+                     scores$test)
+```
+
+### Filtering samples
+```{r}
+# Check data
+# ======
+stopifnot(ncol(x_train) == ncol(x_test))
+stopifnot(colnames(x_train) == colnames(x_test))
+stopifnot(nrow(x_train) == nrow(y_train))
+# stopifnot(nrow(x_test) == nrow(y_test))
+
+# Creating train and test data
+print("Creating train and test data ...")
+train <- cbind.data.frame(x_train, y_train)
+#test  <- cbind.data.frame(x_test, y_test)
+test <- as.data.frame(x_test)
+
+# What do we do with ...
+# ======
+# NA's values in train and test?
+train <- train[complete.cases(train), ]
+test <- missRanger(test, pmm.k = 10, seed = 153)
+# Negatives survival values in train and test?
+train <- train[-which(train$Event_time < 0), ]
+train$Event_time <- train$Event_time + 0.1
+#test$Event_time[which(test$Event_time < 0)] <- 15
+
+# Removing PrevalentHFAIL (only 0)
+train <- train[, -grep("PrevalentHFAIL", colnames(train))]
+test <- test[, -grep("PrevalentHFAIL", colnames(test))]
+```
+
+# Feature Selection with biospear
+```{r}
+# Fit model
+# ========
+method = "lasso"
+cvrts <- c("Age", "BodyMassIndex",
+           "SystolicBP", "NonHDLcholesterol",
+           "Sex", "disbiosis")
+
+print("Fitting the model ...")
+models <- fit_biospear(data = train,
+                       biomarkers = setdiff(colnames(train),
+                                            c(cvrts, colnames(y_train))),
+                       surv = c("Event_time", "Event"),
+                       cvrts = cvrts,
+                       inter = FALSE,
+                       methods = method)
+
+print(models)
+```
+
+# Build final model
+```{r}
+# Build cox with all train data
+# ====
+selected_betas <- models$lasso
+train <- train[, match(
+  c("Event", "Event_time", names(selected_betas)),
+  colnames(train))]
+
+surv <- "Surv(Event_time, Event) ~"
+f <- as.formula(paste0(surv, paste(names(selected_betas),collapse='+')))
+model <- coxph(f, train)
+```
+
+# Predict risk
+```{r}
+# Risk Prediction
+# ====
+risk = function(model, newdata, time) {
+  as.numeric(1-summary(
+    survfit(model, newdata = newdata, se.fit = F, conf.int = F), 
+    times = time, extend = TRUE)$surv)
+}
+
+pred <- risk(model, test, time = 15)
+```
+
+# Final scores
+```{r}
+# Save scores
+scores <- data.frame(
+    SampleID = rownames(test),
+    Score = pred
+)
+print(head(scores))
+#write.csv(scores, quote = FALSE, row.names = FALSE,
+#          file = file.path(outputdir, "scores.csv"))
+```
+
+# Run time
+```{r}
+end <- Sys.time()
+time <- difftime(end, start, units = "mins")
+print(time)
+```
