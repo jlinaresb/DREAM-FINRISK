@@ -21,8 +21,6 @@ sb2 <- read.csv(sb2_path, header = TRUE)
 
 # DENVER scores
 denver <- read.csv(denver_path, header = TRUE)
-set.seed(1993)
-denver$Score <- sample(denver$Score)
 
 # Join datasets and stratify by clinical covariates
 data <- 
